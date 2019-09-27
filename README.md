@@ -25,7 +25,7 @@ Keras implementation of **AdamW**, **SGDW**, **NadamW**, and **Warm Restarts**, 
 Two methods to set `weight_decays = {<weight matrix name>:<weight decay value>,}`:
 
 ```python
-# 1. Use adamw_utils.py
+# 1. Use keras_adamw.utils.py
 Dense(.., kernel_regularizer=l2(0)) # set weight decays in layers as usual, but to ZERO
 wd_dict = get_weight_decays(model)
 ordered_values = [1e-4, 1e-3, ..] # print(wd_dict) to see returned matrix names, note their order
