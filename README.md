@@ -1,7 +1,7 @@
 # Keras AdamW
 
 [![Build Status](https://travis-ci.com/OverLordGoldDragon/keras-adamw.svg?token=dGKzzAxzJjaRLzddNsCd&branch=master)](https://travis-ci.com/OverLordGoldDragon/keras-adamw)
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/f6e7d1e69873435281bb5e3c13de96ed)](https://www.codacy.com?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=OverLordGoldDragon/keras-adamw&amp;utm_campaign=Badge_Grade)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/1215c1605ad545cba419ee6e5cc870f5)](https://www.codacy.com?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=OverLordGoldDragon/keras-adamw&amp;utm_campaign=Badge_Grade)
 ![](https://img.shields.io/badge/keras-tensorflow-blue.svg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
