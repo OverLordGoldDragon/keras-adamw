@@ -1,0 +1,9 @@
+setuptools>=41.0.0
+twine>=1.15.0
+Keras
+tensorflow
+torch
+numpy
+coverage
+nose
+pycodestyle

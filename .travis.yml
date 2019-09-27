@@ -1,0 +1,52 @@
+dist: xenial
+language: python
+python:
+  - "3.6"
+matrix:
+  include:
+    - python: 3.6
+      env: KERAS="true"
+    - python: 3.6
+      env: KERAS="false"
+notifications:
+  email: false
+  
+before_install:
+  - chmod +x test.sh
+  - sudo apt-get update
+  - sudo apt-get -y install python-pip
+  - pip install --upgrade pip
+  - pip install --upgrade pip
+  - pip install pep8
+  - pip install autopep8
+  
+install:
+  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  - conda info -a
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION
+  - source activate test-environment
+  - export LD_LIBRARY_PATH=$HOME/miniconda/envs/test-environment/lib/:$LD_LIBRARY_PATH
+  - pip install -r requirements.txt
+  - if [[ $KERAS_BACKEND == "theano" ]]; then pip install theano && conda install mkl mkl-service; fi
+  - conda install coveralls
+  
+script:
+ - ./test.sh
+    
+after_success:
+  # Combine coverage reports from Travis jobs
+  - coverage combine --append
+  - coveralls
+  - codecov
+notifications:
+  webhooks:
+    - https://coveralls.io/webhook
+
+# E127 = continuation line over-indented for visual indent
+# E128 = continuation line under-indented for visual indent
+# E221 = multiple spaces before operator
+# E251 = unexpected spaces around keyword / parameter equals
