@@ -323,7 +323,7 @@ class NadamW(Optimizer):
                     K.sqrt(v_t_prime) + self.epsilon)
 
             # Weight decays
-            if p.name in self.weight_decays.keys():
+            if p.name in self.weight_decays.keys() and total_iterations != 0:
                 wd = self.weight_decays[p.name]
                 wd_normalized = wd * K.cast(
                         K.sqrt(self.batch_size/self.total_iterations), 'float32')
@@ -470,7 +470,7 @@ class SGDW(Optimizer):
                 new_p = p + v
 
             # Weight decays
-            if p.name in self.weight_decays.keys():
+            if p.name in self.weight_decays.keys() and total_iterations != 0:
                 wd = self.weight_decays[p.name]
                 wd_normalized = wd * K.cast(
                         K.sqrt(self.batch_size/self.total_iterations), 'float32')
