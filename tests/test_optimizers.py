@@ -6,6 +6,7 @@ import numpy as np
 from keras.layers import Input, Dense, GRU, Bidirectional
 from keras.models import Model, load_model
 from keras.regularizers import l2
+from keras.constraints import maxnorm
 import keras.backend as K
 import tensorflow as tf
 import random
