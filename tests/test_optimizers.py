@@ -15,6 +15,7 @@ from termcolor import cprint
 from keras_adamw.optimizers import AdamW, SGDW, NadamW
 from keras_adamw.utils import get_weight_decays, fill_dict_in_order
 
+
 class TestOptimizers(TestCase):
 
     def test_all(self):  # Save/Load, Warm Restarts (w/ cosine annealing)
