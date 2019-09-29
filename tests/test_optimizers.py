@@ -78,9 +78,9 @@ class TestOptimizers(TestCase):
             cprint("<< TESTING {} OPTIMIZER >>".format(optimizer_name), 'blue')
             self._set_random_seed()
 
-            kw_params = {'total_iterations': 0, 'initial_decay': 1e-3,
-                         'amsgrad': optimizer_name == 'AdamW',
-                         'nesterov': optimizer_name == 'SGDW'}
+            optimizer_kw = {'total_iterations': 0, 'decay': 1e-3,
+                            'amsgrad': optimizer_name == 'AdamW',
+                            'nesterov': optimizer_name == 'SGDW'}
             num_batches = 4
             batch_size, timesteps, input_dim = 32, 10, 8
             batch_shape = (batch_size, timesteps, input_dim)
@@ -89,7 +89,7 @@ class TestOptimizers(TestCase):
             self.model = self._make_model(optimizer_name, batch_shape,
                                           total_iterations, dense_constraint=1)
             optimizer = self._make_optimizer(optimizer_name, self.model,
-                                             **kw_params)
+                                             **optimizer_kw)
             self.model.compile(optimizer, loss='binary_crossentropy')
             X, Y = self._make_data(num_batches, *batch_shape)
 
@@ -111,7 +111,7 @@ class TestOptimizers(TestCase):
 
             w_loaded = K.batch_get_value(self.model.optimizer.weights)
             self.assertTrue(
-                    all([np.allclose(wl, ws, rtol=0, atol=1e-7) for (wl, ws) in
+                    all([np.allclose(wl, ws, rtol=0, atol=4e-7) for (wl, ws) in
                          zip(w_loaded, saved_optimizer_weights)]))
             # cleanup
             del self.model, optimizer
@@ -142,7 +142,7 @@ class TestOptimizers(TestCase):
         return Model(ipt, out)
 
     @staticmethod
-    def _make_optimizer(optimizer_name, model, total_iterations, initial_decay=0,
+    def _make_optimizer(optimizer_name, model, total_iterations, decay=0,
                         amsgrad=False, nesterov=False):
         optimizer_dict = {'AdamW': AdamW, 'NadamW': NadamW, 'SGDW': SGDW}
         optimizer = optimizer_dict[optimizer_name]
@@ -158,7 +158,7 @@ class TestOptimizers(TestCase):
         lr_m = {'gru': 0.5}
 
         return optimizer(lr=1e-4, weight_decays=wd, lr_multipliers=lr_m,
-                         use_cosine_annealing=True, t_cur=0,
+                         use_cosine_annealing=True, t_cur=0, decay=decay,
                          total_iterations=total_iterations, **optimizer_kw)
 
     @staticmethod
