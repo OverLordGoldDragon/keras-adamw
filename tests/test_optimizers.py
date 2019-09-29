@@ -15,7 +15,6 @@ from termcolor import cprint
 from keras_adamw.optimizers import AdamW, SGDW, NadamW
 from keras_adamw.utils import get_weight_decays, fill_dict_in_order
 
-
 class TestOptimizers(TestCase):
 
     def test_all(self):  # Save/Load, Warm Restarts (w/ cosine annealing)
@@ -152,13 +151,15 @@ class TestOptimizers(TestCase):
             optimizer_kw = {'amsgrad': amsgrad}
         elif optimizer_name == 'SGDW':
             optimizer_kw = {'nesterov': nesterov}
+        if optimizer_name != 'NadamW':
+            optimizer_kw.update({'decay': decay})
 
         wd_dict = get_weight_decays(model)
         wd = fill_dict_in_order(wd_dict, [1e-5, 1e-5, 1e-6])
         lr_m = {'gru': 0.5}
 
         return optimizer(lr=1e-4, weight_decays=wd, lr_multipliers=lr_m,
-                         use_cosine_annealing=True, t_cur=0, decay=decay,
+                         use_cosine_annealing=True, t_cur=0,
                          total_iterations=total_iterations, **optimizer_kw)
 
     @staticmethod
