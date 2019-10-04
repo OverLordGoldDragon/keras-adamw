@@ -6,7 +6,7 @@ import numpy as np
 from keras.layers import Input, Dense, GRU, Bidirectional
 from keras.models import Model, load_model
 from keras.regularizers import l2
-from keras.constraints import maxnorm
+from keras.constraints import MaxNorm as maxnorm
 import keras.backend as K
 import tensorflow as tf
 import random
@@ -87,7 +87,8 @@ class TestOptimizers(TestCase):
             total_iterations = 0
 
             self.model = self._make_model(optimizer_name, batch_shape,
-                                          total_iterations, dense_constraint=1)
+                                          total_iterations, dense_constraint=1,
+                                          l2_reg=1e-4)
             optimizer = self._make_optimizer(optimizer_name, self.model,
                                              **optimizer_kw)
             self.model.compile(optimizer, loss='binary_crossentropy')
@@ -128,14 +129,14 @@ class TestOptimizers(TestCase):
 
     @staticmethod
     def _make_model(optimizer, batch_shape, total_iterations,
-                    dense_constraint=None):
+                    dense_constraint=None, l2_reg=0):
         if dense_constraint is not None:
             dense_constraint = maxnorm(dense_constraint)
 
         ipt = Input(batch_shape=batch_shape)
-        x = Bidirectional(GRU(4, recurrent_regularizer=l2(0),
-                              bias_regularizer=l2(0)))(ipt)
-        x = Dense(2, kernel_regularizer=l2(0),
+        x = Bidirectional(GRU(4, recurrent_regularizer=l2(l2_reg),
+                              bias_regularizer=l2(l2_reg)))(ipt)
+        x = Dense(2, kernel_regularizer=l2(l2_reg),
                   kernel_constraint=dense_constraint)(x)
         out = Dense(1, activation='sigmoid')(x)
 
@@ -185,5 +186,8 @@ class TestOptimizers(TestCase):
     def _set_random_seed():
         np.random.seed(42)
         random.seed(100)
-        tf.set_random_seed(999)
+        if tf.__version__.split('.')[0] == '2':
+            tf.random.set_seed(999)
+        else:
+            tf.set_random_seed(999)
         print("USING RANDOM SEED")
