@@ -156,6 +156,9 @@ class AdamW(Optimizer):
             else:
                 p_t = p - lr_t * m_t / (K.sqrt(v_t) + self.epsilon)
 
+            self.updates.append(K.update(m, m_t))
+            self.updates.append(K.update(v, v_t))
+
             # Weight decays
             if p.name in self.weight_decays.keys() and total_iterations != 0:
                 wd = self.weight_decays[p.name]
@@ -165,9 +168,6 @@ class AdamW(Optimizer):
                 if self.init_verbose:
                     print('{} weight decay set for {}'.format(
                             K.get_value(wd_normalized), p.name))
-
-            self.updates.append(K.update(m, m_t))
-            self.updates.append(K.update(v, v_t))
             new_p = p_t
 
             # Apply constraints.
@@ -178,22 +178,24 @@ class AdamW(Optimizer):
         return self.updates
 
     def get_config(self):
-        config = {'learning_rate': float(K.get_value(self.learning_rate)),
-                  'beta_1': float(K.get_value(self.beta_1)),
-                  'beta_2': float(K.get_value(self.beta_2)),
-                  'decay': float(K.get_value(self.decay)),
-                  'batch_size': int(K.get_value(self.batch_size)),
-                  'total_iterations': int(K.get_value(self.total_iterations)),
-                  'weight_decays': self.weight_decays,
-                  'lr_multipliers': self.lr_multipliers,
-                  'use_cosine_annealing': self.use_cosine_annealing,
-                  't_cur': int(K.get_value(self.t_cur)),
-                  'eta_t': int(K.get_value(self.eta_t)),
-                  'eta_min': int(K.get_value(self.eta_min)),
-                  'eta_max': int(K.get_value(self.eta_max)),
-                  'init_verbose': self.init_verbose,
-                  'epsilon': self.epsilon,
-                  'amsgrad': self.amsgrad}
+        config = {
+            'learning_rate': float(K.get_value(self.learning_rate)),
+            'beta_1': float(K.get_value(self.beta_1)),
+            'beta_2': float(K.get_value(self.beta_2)),
+            'decay': float(K.get_value(self.decay)),
+            'batch_size': int(K.get_value(self.batch_size)),
+            'total_iterations': int(K.get_value(self.total_iterations)),
+            'weight_decays': self.weight_decays,
+            'lr_multipliers': self.lr_multipliers,
+            'use_cosine_annealing': self.use_cosine_annealing,
+            't_cur': int(K.get_value(self.t_cur)),
+            'eta_t': int(K.get_value(self.eta_t)),
+            'eta_min': int(K.get_value(self.eta_min)),
+            'eta_max': int(K.get_value(self.eta_max)),
+            'init_verbose': self.init_verbose,
+            'epsilon': self.epsilon,
+            'amsgrad': self.amsgrad
+        }
         base_config = super(AdamW, self).get_config()
         return dict(list(base_config.items()) + list(config.items()))
 
@@ -350,21 +352,23 @@ class NadamW(Optimizer):
         super(NadamW, self).set_weights(weights)
 
     def get_config(self):
-        config = {'learning_rate': float(K.get_value(self.learning_rate)),
-                  'beta_1': float(K.get_value(self.beta_1)),
-                  'beta_2': float(K.get_value(self.beta_2)),
-                  'epsilon': self.epsilon,
-                  'schedule_decay': self.schedule_decay,
-                  'batch_size': int(K.get_value(self.batch_size)),
-                  'total_iterations': int(K.get_value(self.total_iterations)),
-                  'weight_decays': self.weight_decays,
-                  'lr_multipliers': self.lr_multipliers,
-                  'use_cosine_annealing': self.use_cosine_annealing,
-                  't_cur': int(K.get_value(self.t_cur)),
-                  'eta_t': int(K.get_value(self.eta_t)),
-                  'eta_min': int(K.get_value(self.eta_min)),
-                  'eta_max': int(K.get_value(self.eta_max)),
-                  'init_verbose': self.init_verbose}
+        config = {
+            'learning_rate': float(K.get_value(self.learning_rate)),
+            'beta_1': float(K.get_value(self.beta_1)),
+            'beta_2': float(K.get_value(self.beta_2)),
+            'epsilon': self.epsilon,
+            'schedule_decay': self.schedule_decay,
+            'batch_size': int(K.get_value(self.batch_size)),
+            'total_iterations': int(K.get_value(self.total_iterations)),
+            'weight_decays': self.weight_decays,
+            'lr_multipliers': self.lr_multipliers,
+            'use_cosine_annealing': self.use_cosine_annealing,
+            't_cur': int(K.get_value(self.t_cur)),
+            'eta_t': int(K.get_value(self.eta_t)),
+            'eta_min': int(K.get_value(self.eta_min)),
+            'eta_max': int(K.get_value(self.eta_max)),
+            'init_verbose': self.init_verbose
+        }
         base_config = super(NadamW, self).get_config()
         return dict(list(base_config.items()) + list(config.items()))
 
@@ -416,6 +420,7 @@ class SGDW(Optimizer):
         self.use_cosine_annealing = use_cosine_annealing
 
     @interfaces.legacy_get_updates_support
+    @K.symbolic
     def get_updates(self, loss, params):
         grads = self.get_gradients(loss, params)
         self.updates = [K.update_add(self.iterations, 1)]
@@ -486,19 +491,21 @@ class SGDW(Optimizer):
         return self.updates
 
     def get_config(self):
-        config = {'learning_rate': float(K.get_value(self.learning_rate)),
-                  'momentum': float(K.get_value(self.momentum)),
-                  'decay': float(K.get_value(self.decay)),
-                  'nesterov': self.nesterov,
-                  'batch_size': int(K.get_value(self.batch_size)),
-                  'total_iterations': int(K.get_value(self.total_iterations)),
-                  'weight_decays': self.weight_decays,
-                  'lr_multipliers': self.lr_multipliers,
-                  'use_cosine_annealing': self.use_cosine_annealing,
-                  't_cur': int(K.get_value(self.t_cur)),
-                  'eta_t': int(K.get_value(self.eta_t)),
-                  'eta_min': int(K.get_value(self.eta_min)),
-                  'eta_max': int(K.get_value(self.eta_max)),
-                  'init_verbose': self.init_verbose}
+        config = {
+            'learning_rate': float(K.get_value(self.learning_rate)),
+            'momentum': float(K.get_value(self.momentum)),
+            'decay': float(K.get_value(self.decay)),
+            'nesterov': self.nesterov,
+            'batch_size': int(K.get_value(self.batch_size)),
+            'total_iterations': int(K.get_value(self.total_iterations)),
+            'weight_decays': self.weight_decays,
+            'lr_multipliers': self.lr_multipliers,
+            'use_cosine_annealing': self.use_cosine_annealing,
+            't_cur': int(K.get_value(self.t_cur)),
+            'eta_t': int(K.get_value(self.eta_t)),
+            'eta_min': int(K.get_value(self.eta_min)),
+            'eta_max': int(K.get_value(self.eta_max)),
+            'init_verbose': self.init_verbose
+        }
         base_config = super(SGDW, self).get_config()
         return dict(list(base_config.items()) + list(config.items()))
