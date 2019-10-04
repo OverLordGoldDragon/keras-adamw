@@ -187,7 +187,7 @@ class TestOptimizers(TestCase):
         np.random.seed(42)
         random.seed(100)
         print("TF version: %s" % tf.__version__)
-        if float('.'.join(tf.__version__.split('.')[:2])) < 1.14:
+        if int(tf.__version__[0]) == 2:
             tf.random.set_seed(999)
         else:
             tf.set_random_seed(999)
