@@ -10,8 +10,8 @@ env:
 
 #     - KERAS_VERSION="2.2.5" TF_VERSION="1.13.1"
 #     - KERAS_VERSION="2.2.5" TF_VERSION="1.14.0"
-#     - TF_VERSION="1.14.0"
-    - TF_VERSION="2.0.0"
+    - TF_VERSION="1.14.0"
+#     - TF_VERSION="2.0.0"
 
 #     - KERAS_VERSION="2.3.0" TF_VERSION="1.14.0"
     # - KERAS_VERSION="2.3.0" TF_VERSION="2.0.0"
