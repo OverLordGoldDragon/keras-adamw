@@ -3,11 +3,7 @@ language: python
 python:
   - "3.6"
 env:
-  global:
-    - KERAS="true"
   matrix:
-    - KERAS="false"
-
 #     - KERAS_VERSION="2.2.5" TF_VERSION="1.13.1"
 #     - KERAS_VERSION="2.2.5" TF_VERSION="1.14.0"
     - TF_VERSION="1.14.0"
@@ -41,17 +37,15 @@ before_install:
   
 install:
   - |
-      if [[ "$KERAS" == "true" ]]; then
-          if [[ -n "$KERAS_VERSION" ]]; then
-              pip install keras=="$KERAS_VERSION";
-          else
-              pip install keras;
-          fi
-          if [[ -n "$TF_VERSION" ]]; then
-              pip install tensorflow=="$TF_VERSION";
-          else
-              pip install tensorflow;
-          fi
+      if [[ -n "$KERAS_VERSION" ]]; then
+          pip install keras=="$KERAS_VERSION";
+      else
+          pip install keras;
+      fi
+      if [[ -n "$TF_VERSION" ]]; then
+          pip install tensorflow=="$TF_VERSION";
+      else
+          pip install tensorflow;
       fi
   
 script:
