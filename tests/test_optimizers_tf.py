@@ -5,15 +5,15 @@ import tensorflow as tf
 import numpy as np
 from time import time
 
-from keras.layers import Input, Dense, GRU, Bidirectional, Embedding
-from keras.models import Model, load_model
-from keras.regularizers import l2
-from keras.constraints import MaxNorm as maxnorm
+from tensorflow.keras.layers import Input, Dense, GRU, Bidirectional, Embedding
+from tensorflow.keras.models import Model
+from tensorflow.keras.regularizers import l2
+from tensorflow.keras.constraints import MaxNorm as maxnorm
 from termcolor import cprint
 from unittest import TestCase
 
-from keras_adamw import AdamW, NadamW, SGDW
-from keras.optimizers import Adam, Nadam, SGD
+from tf_keras_adamw import AdamW, NadamW, SGDW
+from tensorflow.python.keras.optimizers import Adam, Nadam, SGD
 from adamw_utils import get_weight_decays, fill_dict_in_order, reset_seeds
 
 
@@ -51,7 +51,7 @@ class TestOptimizers(TestCase):
 
             self.assertTrue(self._valid_cosine_annealing(self.eta_history,
                             total_iterations, num_epochs))
-            self._test_save_load(self.model, X, optimizer_name, optimizer)
+            self._test_save_load_weights(self.model, X, optimizer_name, optimizer)
 
             # cleanup
             del self.model, optimizer
@@ -87,7 +87,7 @@ class TestOptimizers(TestCase):
             for batch_num in range(num_batches):
                 self.model.train_on_batch(X[batch_num], Y[batch_num])
 
-            self._test_save_load(self.model, X, optimizer_name, optimizer)
+            self._test_save_load_weights(self.model, X, optimizer_name, optimizer)
 
             # cleanup
             del self.model, optimizer
@@ -181,17 +181,16 @@ class TestOptimizers(TestCase):
         del optimizer_custom, optimizer_control
         K.clear_session()
 
-    def _test_save_load(self, model, X, optimizer_name, optimizer):
+    def _test_save_load_weights(self, model, X, optimizer_name, optimizer):
         saved_model_preds = model.predict(X[0])
         saved_model_weights = K.batch_get_value(model.trainable_weights)
         saved_optim_weights = K.batch_get_value(model.optimizer.weights)
 
         test_name = 'test__%f{}.h5'.format(np.random.random())
         modelpath = os.path.join(tempfile.gettempdir(), test_name)
-        model.save(modelpath)
-        del model
+        model.save_weights(modelpath)
 
-        model = load_model(modelpath, custom_objects={optimizer_name: optimizer})
+        model.load_weights(modelpath)
         loaded_model_preds = model.predict(X[0])
         loaded_model_weights = K.batch_get_value(model.trainable_weights)
         loaded_optim_weights = K.batch_get_value(model.optimizer.weights)

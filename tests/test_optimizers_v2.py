@@ -5,15 +5,15 @@ import tensorflow as tf
 import numpy as np
 from time import time
 
-from keras.layers import Input, Dense, GRU, Bidirectional, Embedding
-from keras.models import Model, load_model
-from keras.regularizers import l2
-from keras.constraints import MaxNorm as maxnorm
+from tensorflow.keras.layers import Input, Dense, GRU, Bidirectional, Embedding
+from tensorflow.keras.models import Model, load_model
+from tensorflow.keras.regularizers import l2
+from tensorflow.keras.constraints import MaxNorm as maxnorm
 from termcolor import cprint
 from unittest import TestCase
 
-from keras_adamw import AdamW, NadamW, SGDW
-from keras.optimizers import Adam, Nadam, SGD
+from adamw_v2 import AdamW, NadamW, SGDW
+from tensorflow.keras.optimizers import Adam, Nadam, SGD
 from adamw_utils import get_weight_decays, fill_dict_in_order, reset_seeds
 
 
@@ -45,8 +45,8 @@ class TestOptimizers(TestCase):
             for epoch in range(num_epochs):
                 for batch_num in range(num_batches):
                     self.t_cur_history += [K.eval(self.model.optimizer.t_cur)]
-                    self.eta_history += [K.eval(self.model.optimizer.eta_t)]
                     self.model.train_on_batch(X[batch_num], Y[batch_num])
+                    self.eta_history += [K.eval(self.model.optimizer.eta_t)]
                 K.set_value(self.model.optimizer.t_cur, 0)
 
             self.assertTrue(self._valid_cosine_annealing(self.eta_history,

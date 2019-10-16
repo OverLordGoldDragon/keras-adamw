@@ -1,6 +1,14 @@
+import keras.backend as K
+from termcolor import colored
+import numpy as np
+import tensorflow as tf
+import random
 '''Helper methods for keras_adamw.py
-
 '''
+
+
+def warn_str():
+    return colored('WARNING: ', 'red')
 
 
 def get_weight_decays(model, verbose=1):
@@ -12,7 +20,7 @@ def get_weight_decays(model, verbose=1):
                 weight_name, weight_l2 = layer_l2
                 wd_dict.update({weight_name: weight_l2})
                 if weight_l2 != 0 and verbose:
-                    print(("WARNING: {} l2-regularization = {} - should be "
+                    print((warn_str() + "{} l2-regularization = {} - should be "
                           "set 0 before compiling model").format(
                                   weight_name, weight_l2))
     return wd_dict
@@ -38,10 +46,19 @@ def _get_layer_l2regs(layer):
 
 
 def _rnn_l2regs(layer):
-    _layer = layer.layer if 'backward_layer' in layer.__dict__ else layer
-    cell = _layer.cell
-
     l2_lambda_krb = []
+    if hasattr(layer, 'backward_layer'):
+        for layer in [layer.forward_layer, layer.backward_layer]:
+            l2_lambda_krb += _cell_l2regs(layer.cell)
+        return l2_lambda_krb
+    else:
+        return _cell_l2regs(layer.cell)
+
+
+def _cell_l2regs(rnn_cell):
+    cell = rnn_cell
+    l2_lambda_krb = []  # kernel-recurrent-bias
+
     if hasattr(cell, 'kernel_regularizer') or \
        hasattr(cell, 'recurrent_regularizer') or hasattr(cell, 'bias_regularizer'):
         for weight_name in ['kernel', 'recurrent', 'bias']:
@@ -52,3 +69,69 @@ def _rnn_l2regs(layer):
                 l2_lambda_krb.append([getattr(cell, weight_name).name,
                                       float(_lambda.l2)])
     return l2_lambda_krb
+
+
+def _apply_weight_decays(cls, var, var_t, force_eager=False):
+    wd = cls.weight_decays[var.name]
+    wd_normalized = wd * K.cast(
+            K.sqrt(cls.batch_size / cls.total_iterations), 'float32')
+    var_t = var_t - cls.eta_t * wd_normalized * var
+
+    if cls.init_verbose and not cls._init_notified:
+        _eval = K.eval
+        if force_eager:
+            _eval = K.eager(K.eval)
+        print('{} weight decay set for {}'.format(
+                _eval(wd_normalized), var.name))
+    return var_t
+
+
+def _compute_eta_t(cls):
+    PI = 3.141592653589793
+    t_frac = K.cast(cls.t_cur / cls.total_iterations, 'float32')
+    eta_t = cls.eta_min + 0.5 * (cls.eta_max - cls.eta_min) * \
+        (1 + K.cos(PI * t_frac))
+    return eta_t
+
+
+def _apply_lr_multiplier(cls, lr_t, var, force_eager=False):
+    multiplier_name = [mult_name for mult_name in cls.lr_multipliers
+                       if mult_name in var.name]
+    if multiplier_name != []:
+        lr_mult = cls.lr_multipliers[multiplier_name[0]]
+    else:
+        lr_mult = 1
+    lr_t = lr_t * lr_mult
+
+    _eval = K.eval
+    if force_eager:
+        _eval = K.eager(K.eval)
+
+    if cls.init_verbose and not cls._init_notified:
+        if lr_mult != 1:
+            print('{} init learning rate set for {} -- {}'.format(
+               '%.e' % _eval(lr_t), var.name, lr_t))
+        else:
+            print('No change in learning rate {} -- {}'.format(
+                                              var.name, _eval(lr_t)))
+    return lr_t
+
+
+def _check_args(total_iterations, use_cosine_annealing, weight_decays):
+    if use_cosine_annealing and total_iterations != 0:
+        print('Using cosine annealing learning rates')
+    elif (use_cosine_annealing or weight_decays != {}) and total_iterations == 0:
+        print(warn_str() + "'total_iterations'==0, must be !=0 to use "
+              + "cosine annealing and/or weight decays; "
+              + "proceeding without either")
+
+
+def reset_seeds(verbose=1):
+    np.random.seed(1)
+    random.seed(2)
+    if tf.__version__[0] == '2':
+        tf.random.set_seed(3)
+    else:
+        tf.set_random_seed(3)
+    if verbose:
+        print("RANDOM SEEDS RESET")
