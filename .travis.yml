@@ -16,7 +16,6 @@ before_install:
   - sudo apt-get update
   - sudo apt-get -y install python-pip
   - pip install --upgrade pip
-  - pip install --upgrade pip
   - pip install pep8
   - pip install autopep8
   
@@ -25,13 +24,13 @@ install:
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
   - conda config --set always_yes yes --set changeps1 no
-  - conda update -q conda
+  - conda update -q --force conda
+  - conda install setuptools
   - conda info -a
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION
   - source activate test-environment
   - export LD_LIBRARY_PATH=$HOME/miniconda/envs/test-environment/lib/:$LD_LIBRARY_PATH
   - pip install -r requirements.txt
-  - if [[ $KERAS_BACKEND == "theano" ]]; then pip install theano && conda install mkl mkl-service; fi
   - conda install coveralls
   
 script:
