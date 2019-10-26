@@ -4,9 +4,9 @@ from tensorflow.python.keras.optimizer_v2.optimizer_v2 import OptimizerV2
 from tensorflow.python.keras.optimizer_v2 import learning_rate_schedule
 from tensorflow.python.ops import array_ops, control_flow_ops, math_ops, state_ops
 from tensorflow.python.util.tf_export import keras_export
-import keras.backend as K
-from .utils import _apply_weight_decays, _compute_eta_t
-from .utils import _apply_lr_multiplier, _check_args, K_eval
+import tensorflow.keras.backend as K
+from .utils_225 import _apply_weight_decays, _compute_eta_t
+from .utils_225 import _apply_lr_multiplier, _check_args
 
 
 @keras_export('keras.optimizers.AdamW')
@@ -87,11 +87,11 @@ class AdamW(OptimizerV2):
         self._set_hyper('beta_1', beta_1)
         self._set_hyper('beta_2', beta_2)
 
-        self.batch_size = K.variable(batch_size, dtype='int64', name='batch_size')
         self.eta_min = K.constant(eta_min, name='eta_min')
         self.eta_max = K.constant(eta_max, name='eta_max')
         self.eta_t = K.variable(eta_t, dtype='float32', name='eta_t')
         self.t_cur = K.variable(t_cur, dtype='int64', name='t_cur')
+        self.batch_size = batch_size
         self.total_iterations = total_iterations
         self.total_iterations_wd = total_iterations_wd or total_iterations
         self.lr_multipliers = lr_multipliers
@@ -104,6 +104,7 @@ class AdamW(OptimizerV2):
         _check_args(total_iterations, use_cosine_annealing, self.weight_decays)
         self._updates_processed = 0  # to track num calls to '_resource_apply_...'
         self._init_notified = False
+        self._init_lr = kwargs.get('lr', learning_rate)
 
     def _create_slots(self, var_list):
         # Create slots for the first and second moments.
@@ -208,13 +209,16 @@ class AdamW(OptimizerV2):
             v_t = self._resource_scatter_add(v, indices, v_scaled_g_values)
 
         if self.amsgrad:
-            vhat = self.get_slot(var, 'vhat')
-            vhat_t = state_ops.assign(vhat,
-                                      math_ops.maximum(vhat, v_t),
-                                      use_locking=self._use_locking)
-            var_delta = m_t / (math_ops.sqrt(vhat_t) + epsilon_t)
+            v_hat = self.get_slot(var, 'vhat')
+            v_hat_t = math_ops.maximum(v_hat, v_t)
+            with ops.control_dependencies([v_hat_t]):
+                v_hat_t = state_ops.assign(
+                    v_hat, v_hat_t, use_locking=self._use_locking)
+            v_hat_sqrt = math_ops.sqrt(v_hat_t)
+            var_delta = m_t / (v_hat_sqrt + epsilon_t)
         else:
-            var_delta = m_t / (math_ops.sqrt(v_t) + epsilon_t)
+            v_sqrt = math_ops.sqrt(v_t)
+            var_delta = m_t / (v_sqrt + epsilon_t)
 
         var_t = math_ops.sub(var, self.eta_t * lr_t * var_delta)
 
@@ -231,9 +235,8 @@ class AdamW(OptimizerV2):
         var_update = state_ops.assign(var, var_t, use_locking=self._use_locking)
         t_cur = state_ops.assign_add(self.t_cur, int(iteration_done),
                                      use_locking=self._use_locking)
+
         updates = [var_update, m_t, v_t, t_cur]
-        if self.amsgrad:
-            updates.append(vhat_t)
         return control_flow_ops.group(*updates)
 
     def set_weights(self, weights):
@@ -255,14 +258,14 @@ class AdamW(OptimizerV2):
             'beta_2': self._serialize_hyperparameter('beta_2'),
             'epsilon': self.epsilon,
             'amsgrad': self.amsgrad,
-            'batch_size': int(K_eval(self.batch_size)),
+            'batch_size': int(K.get_value(self.batch_size)),
             'total_iterations': int(self.total_iterations),
             'weight_decays': self.weight_decays,
             'use_cosine_annealing': self.use_cosine_annealing,
-            't_cur': int(K_eval(self.t_cur)),
-            'eta_t': int(K_eval(self.eta_t)),
-            'eta_min': int(K_eval(self.eta_min)),
-            'eta_max': int(K_eval(self.eta_max)),
+            't_cur': int(K.get_value(self.t_cur)),
+            'eta_t': int(K.get_value(self.eta_t)),
+            'eta_min': int(K.get_value(self.eta_min)),
+            'eta_max': int(K.get_value(self.eta_max)),
             'init_verbose': self.init_verbose
         })
         return config
@@ -327,11 +330,11 @@ class NadamW(OptimizerV2):
         self.epsilon = epsilon or backend_config.epsilon()
         self._m_cache = None
 
-        self.batch_size = K.variable(batch_size, dtype='int64', name='batch_size')
         self.eta_min = K.constant(eta_min, name='eta_min')
         self.eta_max = K.constant(eta_max, name='eta_max')
         self.eta_t = K.variable(eta_t, dtype='float32', name='eta_t')
         self.t_cur = K.variable(t_cur, dtype='int64', name='t_cur')
+        self.batch_size = batch_size
         self.total_iterations = total_iterations
         self.total_iterations_wd = total_iterations_wd or total_iterations
         self.lr_multipliers = lr_multipliers
@@ -343,6 +346,7 @@ class NadamW(OptimizerV2):
         _check_args(total_iterations, use_cosine_annealing, self.weight_decays)
         self._updates_processed = 0  # to track num calls to '_resource_apply_...'
         self._init_notified = False
+        self._init_lr = kwargs.get('lr', learning_rate)
 
     def _create_slots(self, var_list):
         var_dtype = var_list[0].dtype.base_dtype
@@ -506,14 +510,14 @@ class NadamW(OptimizerV2):
             'beta_1': self._serialize_hyperparameter('beta_1'),
             'beta_2': self._serialize_hyperparameter('beta_2'),
             'epsilon': self.epsilon,
-            'batch_size': int(K_eval(self.batch_size)),
+            'batch_size': int(K.get_value(self.batch_size)),
             'total_iterations': int(self.total_iterations),
             'weight_decays': self.weight_decays,
             'use_cosine_annealing': self.use_cosine_annealing,
-            't_cur': int(K_eval(self.t_cur)),
-            'eta_t': int(K_eval(self.eta_t)),
-            'eta_min': int(K_eval(self.eta_min)),
-            'eta_max': int(K_eval(self.eta_max)),
+            't_cur': int(K.get_value(self.t_cur)),
+            'eta_t': int(K.get_value(self.eta_t)),
+            'eta_min': int(K.get_value(self.eta_min)),
+            'eta_max': int(K.get_value(self.eta_max)),
             'init_verbose': self.init_verbose
         })
         return config
@@ -561,11 +565,11 @@ class SGDW(OptimizerV2):
         self._set_hyper("momentum", momentum)
 
         self.nesterov = nesterov
-        self.batch_size = K.variable(batch_size, dtype='int64', name='batch_size')
         self.eta_min = K.constant(eta_min, name='eta_min')
         self.eta_max = K.constant(eta_max, name='eta_max')
         self.eta_t = K.variable(eta_t, dtype='float32', name='eta_t')
         self.t_cur = K.variable(t_cur, dtype='int64', name='t_cur')
+        self.batch_size = batch_size
         self.total_iterations = total_iterations
         self.total_iterations_wd = total_iterations_wd or total_iterations
         self.lr_multipliers = lr_multipliers
@@ -576,6 +580,7 @@ class SGDW(OptimizerV2):
         _check_args(total_iterations, use_cosine_annealing, self.weight_decays)
         self._updates_processed = 0  # to track num calls to '_resource_apply_...'
         self._init_notified = False
+        self._init_lr = kwargs.get('lr', learning_rate)
 
     def _create_slots(self, var_list):
         if self._momentum:
@@ -587,7 +592,7 @@ class SGDW(OptimizerV2):
         var_dtype = var.dtype.base_dtype
         lr_t = self._decayed_lr(var_dtype)
         momentum = array_ops.identity(self._get_hyper('momentum', var_dtype))
-        if K_eval(momentum) != 0:
+        if K.eval(momentum) != 0:
             m = self.get_slot(var, 'momentum')
         else:
             m = K.zeros(K.int_shape(var))
@@ -627,7 +632,7 @@ class SGDW(OptimizerV2):
         var_dtype = var.dtype.base_dtype
         lr_t = self._decayed_lr(var_dtype)
         momentum = array_ops.identity(self._get_hyper('momentum', var_dtype))
-        if K_eval(momentum) != 0:
+        if K.eval(momentum) != 0:
             m = self.get_slot(var, 'momentum')
         else:
             m = K.zeros(K.int_shape(var))
@@ -673,14 +678,14 @@ class SGDW(OptimizerV2):
             "decay": self._serialize_hyperparameter("decay"),
             "momentum": self._serialize_hyperparameter("momentum"),
             "nesterov": self.nesterov,
-            'batch_size': int(K_eval(self.batch_size)),
+            'batch_size': int(K.get_value(self.batch_size)),
             'total_iterations': int(self.total_iterations),
             'weight_decays': self.weight_decays,
             'use_cosine_annealing': self.use_cosine_annealing,
-            't_cur': int(K_eval(self.t_cur)),
-            'eta_t': int(K_eval(self.eta_t)),
-            'eta_min': int(K_eval(self.eta_min)),
-            'eta_max': int(K_eval(self.eta_max)),
+            't_cur': int(K.get_value(self.t_cur)),
+            'eta_t': int(K.get_value(self.eta_t)),
+            'eta_min': int(K.get_value(self.eta_min)),
+            'eta_max': int(K.get_value(self.eta_max)),
             'init_verbose': self.init_verbose
         })
         return config

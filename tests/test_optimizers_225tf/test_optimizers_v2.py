@@ -1,23 +1,29 @@
 import os
 import tempfile
-import keras.backend as K
-import tensorflow as tf
 import numpy as np
-from time import time
+import tensorflow as tf
 
-from tensorflow.keras.layers import Input, Dense, GRU, Bidirectional, Embedding
-from tensorflow.keras.models import Model
-from tensorflow.keras.regularizers import l2
-from tensorflow.keras.constraints import MaxNorm as maxnorm
+from time import time
 from termcolor import cprint
 from unittest import TestCase
 
-from tf_keras_adamw import AdamW, NadamW, SGDW
-from tensorflow.python.keras.optimizers import Adam, Nadam, SGD
-from adamw_utils import get_weight_decays, fill_dict_in_order, reset_seeds
+from .. import K
+from .. import Input, Dense, GRU, Bidirectional, Embedding
+from .. import Model, load_model
+from .. import l2
+from .. import maxnorm
+from .. import Adam, Nadam, SGD
+from .. import AdamW, NadamW, SGDW
+from .. import get_weight_decays, fill_dict_in_order, reset_seeds, K_eval
 
 
 print("TF version: %s" % tf.__version__)
+tf_eager = bool(os.environ["TF_EAGER"] == "True")
+if tf_eager:
+    print("TF running eagerly")
+else:
+    tf.compat.v1.disable_eager_execution()
+    print("TF running in graph mode")
 
 
 class TestOptimizers(TestCase):
@@ -37,6 +43,7 @@ class TestOptimizers(TestCase):
                                              total_iterations)
             self.model.compile(optimizer, loss='binary_crossentropy')
             self.assertTrue(self._valid_weight_decays(self.model))
+            self.model._make_train_function()  # else K.eval before train may fail
 
             X, Y = self._make_data(num_batches, *batch_shape)
             self.eta_history = []  # for stop-introspection
@@ -44,18 +51,20 @@ class TestOptimizers(TestCase):
 
             for epoch in range(num_epochs):
                 for batch_num in range(num_batches):
-                    self.t_cur_history += [K.eval(self.model.optimizer.t_cur)]
-                    self.eta_history += [K.eval(self.model.optimizer.eta_t)]
+                    self.t_cur_history += [K_eval(self.model.optimizer.t_cur, K)]
+                    self.eta_history += [K_eval(self.model.optimizer.eta_t, K)]
                     self.model.train_on_batch(X[batch_num], Y[batch_num])
+                    self.eta_history += [K_eval(self.model.optimizer.eta_t, K)]
+                    self.eta_history.pop(-(1 + int(tf_eager)))
                 K.set_value(self.model.optimizer.t_cur, 0)
 
             self.assertTrue(self._valid_cosine_annealing(self.eta_history,
                             total_iterations, num_epochs))
-            self._test_save_load_weights(self.model, X, optimizer_name, optimizer)
+            self._test_save_load(self.model, X, optimizer_name, optimizer)
 
             # cleanup
             del self.model, optimizer
-            K.clear_session()
+            reset_seeds(reset_graph_with_backend=K)
 
             cprint("\n<< {} MAIN TEST PASSED >>\n".format(optimizer_name), 'green')
         cprint("\n<< ALL MAIN TESTS PASSED >>\n", 'green')
@@ -87,18 +96,16 @@ class TestOptimizers(TestCase):
             for batch_num in range(num_batches):
                 self.model.train_on_batch(X[batch_num], Y[batch_num])
 
-            self._test_save_load_weights(self.model, X, optimizer_name, optimizer)
+            self._test_save_load(self.model, X, optimizer_name, optimizer)
 
             # cleanup
             del self.model, optimizer
-            K.clear_session()
+            reset_seeds(reset_graph_with_backend=K)
 
             cprint("\n<< {} MISC TEST PASSED >>\n".format(optimizer_name), 'green')
         cprint("\n<< ALL MISC TESTS PASSED >>\n", 'green')
 
     def test_control(self):  # tests losses against original optimizers'
-        self.Adam = Adam
-        self.AdamW = AdamW
         for optimizer_name in ['AdamW', 'NadamW', 'SGDW']:
             cprint("<< TESTING {} OPTIMIZER >>".format(optimizer_name), 'blue')
             pass_txt = "Control Test Passed"
@@ -135,43 +142,40 @@ class TestOptimizers(TestCase):
                         embed_input_dim=embed_input_dim, l2_reg=0,
                         bidirectional=False, sparse=True)
         loss_name = 'sparse_categorical_crossentropy'
-
         reset_seeds(verbose=0)
+        X, Y = self._make_data(num_batches, *batch_shape,
+                               embed_input_dim=embed_input_dim, sparse=True)
+
+        reset_seeds(reset_graph_with_backend=K, verbose=0)
         self.model_custom = self._make_model(**model_kw)
         optimizer_custom = self._make_optimizer(optimizer_name,
                                                 self.model_custom,
                                                 **optimizer_kw)
         self.model_custom.compile(optimizer_custom, loss=loss_name)
-
-        reset_seeds(verbose=0)
-        self.model_control = self._make_model(**model_kw)
-        optimizer_control = self._make_optimizer(optimizer_name[:-1],
-                                                 self.model_control,
-                                                 **optimizer_kw)
-        self.model_control.compile(optimizer_control, loss=loss_name)
-
-        X, Y = self._make_data(num_batches, *batch_shape,
-                               embed_input_dim=embed_input_dim, sparse=True)
-
         self.loss_custom = []  # for introspection
-        reset_seeds(verbose=0)
         t0 = time()
         for batch_num in range(num_batches):
             self.loss_custom += [self.model_custom.train_on_batch(
                     X[batch_num], Y[batch_num])]
         print("model_custom -- %s batches -- time: %.2f sec" % (num_batches,
                                                                 time() - t0))
+
+        reset_seeds(reset_graph_with_backend=K, verbose=0)
+        self.model_control = self._make_model(**model_kw)
+        optimizer_control = self._make_optimizer(optimizer_name[:-1],
+                                                 self.model_control,
+                                                 **optimizer_kw)
+        self.model_control.compile(optimizer_control, loss=loss_name)
         self.loss_control = []  # for introspection
-        reset_seeds(verbose=0)
         t0 = time()
         for batch_num in range(num_batches):
             self.loss_control += [self.model_control.train_on_batch(
                     X[batch_num], Y[batch_num])]
         print("model_control -- %s batches -- time: %.2f sec" % (num_batches,
                                                                  time() - t0))
+
         loss_diff = np.abs(np.array(self.loss_custom) -
                            np.array(self.loss_control))
-
         print("%s max loss diff: %e" % (optimizer_name, np.max(loss_diff)))
 
         self.assertTrue(np.allclose(self.loss_custom, self.loss_control,
@@ -179,18 +183,19 @@ class TestOptimizers(TestCase):
         # cleanup
         del self.model_custom, self.model_control
         del optimizer_custom, optimizer_control
-        K.clear_session()
+        reset_seeds(reset_graph_with_backend=K, verbose=0)
 
-    def _test_save_load_weights(self, model, X, optimizer_name, optimizer):
+    def _test_save_load(self, model, X, optimizer_name, optimizer):
         saved_model_preds = model.predict(X[0])
         saved_model_weights = K.batch_get_value(model.trainable_weights)
         saved_optim_weights = K.batch_get_value(model.optimizer.weights)
 
         test_name = 'test__%f{}.h5'.format(np.random.random())
         modelpath = os.path.join(tempfile.gettempdir(), test_name)
-        model.save_weights(modelpath)
+        model.save(modelpath)
+        del model
 
-        model.load_weights(modelpath)
+        model = load_model(modelpath, custom_objects={optimizer_name: optimizer})
         loaded_model_preds = model.predict(X[0])
         loaded_model_weights = K.batch_get_value(model.trainable_weights)
         loaded_optim_weights = K.batch_get_value(model.optimizer.weights)
