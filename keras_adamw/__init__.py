@@ -1,4 +1,3 @@
-from .optimizers import *
-from .utils import *
+import os
 
-__version__ = '1.0'
+__version__ = '1.1'
