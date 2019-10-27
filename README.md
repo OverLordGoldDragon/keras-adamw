@@ -23,6 +23,11 @@ Keras implementation of **AdamW**, **SGDW**, **NadamW**, and **Warm Restarts**, 
  - **LR multipliers**: _per-layer_ learning rate multipliers. _Why use?_
    - _Pretraining_; if adding new layers to pretrained layers, using a global `lr` is prone to overfitting
    
+
+## Installation
+
+Not configured to be installed via `!pip` or `git pull`; simply clone or download zip and extract needed modules - only those in the [keras_adamw](https://github.com/OverLordGoldDragon/keras-adamw/tree/master/keras_adamw) folder are needed.
+
 ## Usage
 
 ### Weight decay 
