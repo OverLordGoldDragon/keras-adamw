@@ -1,19 +1,25 @@
 dist: xenial
 language: python
+cache: pip
 python:
   - "3.6"
 env:
+  global:
+    - TF_PYTHON="False"
+    - TF_EAGER="False"
+    - TF_KERAS="False"
   matrix:
-#     - KERAS_VERSION="2.2.5" TF_VERSION="1.13.1"
-#     - KERAS_VERSION="2.2.5" TF_VERSION="1.14.0"
-    - TF_VERSION="1.14.0"
-#     - TF_VERSION="2.0.0"
+    - TF_VERSION="1.14.0" KERAS_VERSION="2.2.5"
+    - TF_VERSION="1.14.0" KERAS_VERSION="2.2.5" TF_KERAS="True"
+    - TF_VERSION="2.0.0"  KERAS_VERSION="2.3.0" TF_EAGER="True"
+    - TF_VERSION="2.0.0"  KERAS_VERSION="2.3.0"
+    - TF_VERSION="2.0.0"  KERAS_VERSION="2.3.0" TF_KERAS="True"  TF_EAGER="True"
+    - TF_VERSION="2.0.0"  KERAS_VERSION="2.3.0" TF_KERAS="True"  
+#    - TF_VERSION="2.0.0"  KERAS_VERSION="2.3.0" TF_PYTHON="True" TF_EAGER="True" -- succeeds locally per bug-fixed tf code
 
-#     - KERAS_VERSION="2.3.0" TF_VERSION="1.14.0"
-    # - KERAS_VERSION="2.3.0" TF_VERSION="2.0.0"
 notifications:
   email: false
-  
+
 before_install:
   - chmod +x test.sh
   - sudo apt-get update
@@ -32,7 +38,7 @@ before_install:
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION
   - source activate test-environment
   - export LD_LIBRARY_PATH=$HOME/miniconda/envs/test-environment/lib/:$LD_LIBRARY_PATH
-  - pip install -r requirements.txt
+  - pip install -r requirements-test.txt
   - conda install coveralls
   
 install:
@@ -50,7 +56,7 @@ install:
   
 script:
  - ./test.sh
-    
+
 after_success:
   # Combine coverage reports from Travis jobs
   - coverage combine --append
