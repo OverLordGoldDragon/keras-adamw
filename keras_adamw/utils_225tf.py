@@ -3,7 +3,8 @@ import keras.backend as K
 import numpy as np
 import random
 from termcolor import colored
-'''Helper methods for optimizers
+from tensorflow.python.ops import math_ops
+'''Helper methods for optimizers_225tf.py optimizers
 '''
 
 
@@ -73,21 +74,20 @@ def _cell_l2regs(rnn_cell):
 
 def _apply_weight_decays(cls, var, var_t):
     wd = cls.weight_decays[var.name]
-    wd_normalized = wd * K.cast(
-            K.sqrt(cls.batch_size / cls.total_iterations_wd), 'float32')
+    wd_normalized = wd * math_ops.sqrt(cls.batch_size / cls.total_iterations_wd)
+    wdn_printable = wd * (cls.batch_size / cls.total_iterations_wd) ** (1/2)
     var_t = var_t - cls.eta_t * wd_normalized * var
 
     if cls.init_verbose and not cls._init_notified:
-        print('{} weight decay set for {}'.format(
-                K_eval(wd_normalized), var.name))
+        print('{} weight decay set for {}'.format(wdn_printable, var.name))
     return var_t
 
 
 def _compute_eta_t(cls):
     PI = 3.141592653589793
-    t_frac = K.cast(cls.t_cur / cls.total_iterations, 'float32')
+    t_frac = math_ops.cast(cls.t_cur / cls.total_iterations, 'float32')
     eta_t = cls.eta_min + 0.5 * (cls.eta_max - cls.eta_min) * \
-        (1 + K.cos(PI * t_frac))
+        (1 + math_ops.cos(PI * t_frac))
     return eta_t
 
 
@@ -101,12 +101,13 @@ def _apply_lr_multiplier(cls, lr_t, var):
     lr_t = lr_t * lr_mult
 
     if cls.init_verbose and not cls._init_notified:
+        lr_t_printable = cls._init_lr * lr_mult
         if lr_mult != 1:
             print('{} init learning rate set for {} -- {}'.format(
-               '%.e' % K_eval(lr_t), var.name, lr_t))
+               '%.e' % lr_t_printable, var.name, lr_t))
         else:
-            print('No change in learning rate {} -- {}'.format(
-                                              var.name, K_eval(lr_t)))
+            print('No change in learning rate {} -- {}'.format(var.name,
+                  lr_t_printable))
     return lr_t
 
 
@@ -146,4 +147,4 @@ def K_eval(x, backend=K):
             eval_fn = K.function([], [x])
             return eval_fn([])[0]
         except Exception as e:
-            return K.eager(K.eval)(x)
+            return K.eval(x)
