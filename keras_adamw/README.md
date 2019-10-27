@@ -1,8 +1,8 @@
 ### Which optimizers to use?
 
 ```python
-TensorFlow 1.14.0 + Keras 2.2.5 + 'keras'    >> optimizers_225.py   + utils_225.py
-TensorFlow 1.14.0 + Keras 2.2.5 + 'tf.keras' >> optimizers_225tf.py + utils_225.py
+TensorFlow 1.14.0 + Keras 2.2.5 + 'keras'    >> optimizers_225.py   + utils.py
+TensorFlow 1.14.0 + Keras 2.2.5 + 'tf.keras' >> optimizers_225tf.py + utils_225tf.py
 TensorFlow 2.0.0  + Keras 2.3.0 + 'keras'    >> optimizers.py       + utils.py
 TensorFlow 2.0.0  + Keras 2.3.0 + 'tf.keras' >> optimizers_v2.py    + utils.py
 ```
