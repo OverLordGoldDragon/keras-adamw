@@ -39,8 +39,6 @@ class AdamW(Optimizer):
         init_verbose: bool. If True, print weight-name--weight-decay, and
                       lr-multiplier--layer-name value pairs set during
                       optimizer initialization (recommended)
-    *NOTE*: add below line before model.save when disabling eager execution:
-        tf.compat.v1.experimental.output_all_intermediates(True)  # bug workaround
 
     # <1> - if using 'warm restarts', then refers to total expected iterations
             for a given restart; can be an estimate, and training won't stop
