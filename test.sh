@@ -18,4 +18,4 @@ fi
 
 nosetests \
     --nocapture --with-coverage --cover-erase --cover-html --cover-html-dir=htmlcov \
-	--ignore-files="tests/import_selection.py" --with-doctest "$TESTDIR" 
+	--ignore-files=tests/import_selection.py --with-doctest "$TESTDIR" 
