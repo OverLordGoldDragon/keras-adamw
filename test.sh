@@ -18,4 +18,4 @@ fi
 
 nosetests \
     --nocapture --with-coverage --cover-erase --cover-html --cover-html-dir=htmlcov \
-	--with-doctest "$TESTDIR"
+	--with-doctest --cover-package="$TESTDIR" "$TESTDIR"
