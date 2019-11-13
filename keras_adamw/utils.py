@@ -33,16 +33,18 @@ def fill_dict_in_order(_dict, _list_of_vals):
 
 
 def _get_layer_l2regs(layer):
-    if hasattr(layer, 'layer') or hasattr(layer, 'cell'):
+    if hasattr(layer, 'cell') or \
+      (hasattr(layer, 'layer') and hasattr(layer.layer, 'cell')):
         return _rnn_l2regs(layer)
-    else:
-        l2_lambda_kb = []
-        for weight_name in ['kernel', 'bias']:
-            _lambda = getattr(layer, weight_name + '_regularizer', None)
-            if _lambda is not None:
-                l2_lambda_kb.append([getattr(layer, weight_name).name,
-                                     float(_lambda.l2)])
-        return l2_lambda_kb
+    elif hasattr(layer, 'layer') and not hasattr(layer.layer, 'cell'):
+        layer = layer.layer
+    l2_lambda_kb = []
+    for weight_name in ['kernel', 'bias']:
+        _lambda = getattr(layer, weight_name + '_regularizer', None)
+        if _lambda is not None:
+            l2_lambda_kb.append([getattr(layer, weight_name).name,
+                                 float(_lambda.l2)])
+    return l2_lambda_kb
 
 
 def _rnn_l2regs(layer):
