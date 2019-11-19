@@ -62,15 +62,11 @@ def _cell_l2regs(rnn_cell):
     cell = rnn_cell
     l2_lambda_krb = []  # kernel-recurrent-bias
 
-    if hasattr(cell, 'kernel_regularizer') or \
-       hasattr(cell, 'recurrent_regularizer') or hasattr(cell, 'bias_regularizer'):
-        for weight_name in ['kernel', 'recurrent', 'bias']:
-            _lambda = getattr(cell, weight_name + '_regularizer', None)
-            if _lambda is not None:
-                weight_name = weight_name if 'recurrent' not in weight_name \
-                                          else 'recurrent_kernel'
-                l2_lambda_krb.append([getattr(cell, weight_name).name,
-                                      float(_lambda.l2)])
+    for weight_idx, weight_type in enumerate(['kernel', 'recurrent', 'bias']):
+        _lambda = getattr(cell, weight_type + '_regularizer', None)
+        if _lambda is not None:
+            weight_name = cell.weights[weight_idx].name
+            l2_lambda_krb.append([weight_name, float(_lambda.l2)])
     return l2_lambda_krb
 
 
