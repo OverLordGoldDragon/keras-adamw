@@ -13,13 +13,13 @@ from .. import Model, load_model
 from .. import l2
 from .. import maxnorm
 from .. import Adam, Nadam, SGD
-from .. import AdamW, NadamW, SGDW
-from .. import get_weight_decays, fill_dict_in_order, reset_seeds, K_eval
+from keras_adamw import AdamW, NadamW, SGDW
+from keras_adamw import get_weight_decays, fill_dict_in_order, reset_seeds, K_eval
 
 
 print("TF version: %s" % tf.__version__)
-tf_eager = bool(os.environ["TF_EAGER"] == "True")
-if tf_eager:
+TF_EAGER = bool(os.environ["TF_EAGER"] == "True")
+if TF_EAGER:
     print("TF running eagerly")
 else:
     tf.compat.v1.disable_eager_execution()
@@ -55,7 +55,7 @@ class TestOptimizers(TestCase):
                     self.eta_history += [K_eval(self.model.optimizer.eta_t, K)]
                     self.model.train_on_batch(X[batch_num], Y[batch_num])
                     self.eta_history += [K_eval(self.model.optimizer.eta_t, K)]
-                    self.eta_history.pop(-(1 + int(tf_eager)))
+                    self.eta_history.pop(-(1 + int(TF_EAGER)))
                 K.set_value(self.model.optimizer.t_cur, 0)
 
             self.assertTrue(self._valid_cosine_annealing(self.eta_history,

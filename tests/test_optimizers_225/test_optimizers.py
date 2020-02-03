@@ -13,13 +13,13 @@ from .. import Model, load_model
 from .. import l2
 from .. import maxnorm
 from .. import Adam, Nadam, SGD
-from .. import AdamW, NadamW, SGDW
-from .. import get_weight_decays, fill_dict_in_order, reset_seeds, K_eval
+from keras_adamw import AdamW, NadamW, SGDW
+from keras_adamw import get_weight_decays, fill_dict_in_order, reset_seeds, K_eval
 
 
 print("TF version: %s" % tf.__version__)
-tf_eager = bool(os.environ["TF_EAGER"] == "True")
-if tf_eager:
+TF_EAGER = bool(os.environ["TF_EAGER"] == "True")
+if TF_EAGER:
     print("TF running eagerly")
 else:
     tf.compat.v1.disable_eager_execution()

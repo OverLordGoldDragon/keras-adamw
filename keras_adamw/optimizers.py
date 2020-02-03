@@ -171,9 +171,9 @@ class AdamW(Optimizer):
             'lr_multipliers': self.lr_multipliers,
             'use_cosine_annealing': self.use_cosine_annealing,
             't_cur': int(K_eval(self.t_cur)),
-            'eta_t': int(K_eval(self.eta_t)),
-            'eta_min': int(K_eval(self.eta_min)),
-            'eta_max': int(K_eval(self.eta_max)),
+            'eta_t': float(K_eval(self.eta_t)),
+            'eta_min': float(K_eval(self.eta_min)),
+            'eta_max': float(K_eval(self.eta_max)),
             'init_verbose': self.init_verbose,
             'epsilon': self.epsilon,
             'amsgrad': self.amsgrad
@@ -327,9 +327,9 @@ class NadamW(Optimizer):
             'lr_multipliers': self.lr_multipliers,
             'use_cosine_annealing': self.use_cosine_annealing,
             't_cur': int(K_eval(self.t_cur)),
-            'eta_t': int(K_eval(self.eta_t)),
-            'eta_min': int(K_eval(self.eta_min)),
-            'eta_max': int(K_eval(self.eta_max)),
+            'eta_t': float(K_eval(self.eta_t)),
+            'eta_min': float(K_eval(self.eta_min)),
+            'eta_max': float(K_eval(self.eta_max)),
             'init_verbose': self.init_verbose
         }
         base_config = super(NadamW, self).get_config()
@@ -448,9 +448,9 @@ class SGDW(Optimizer):
             'lr_multipliers': self.lr_multipliers,
             'use_cosine_annealing': self.use_cosine_annealing,
             't_cur': int(K_eval(self.t_cur)),
-            'eta_t': int(K_eval(self.eta_t)),
-            'eta_min': int(K_eval(self.eta_min)),
-            'eta_max': int(K_eval(self.eta_max)),
+            'eta_t': float(K_eval(self.eta_t)),
+            'eta_min': float(K_eval(self.eta_min)),
+            'eta_max': float(K_eval(self.eta_max)),
             'init_verbose': self.init_verbose
         }
         base_config = super(SGDW, self).get_config()

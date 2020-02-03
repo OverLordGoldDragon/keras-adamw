@@ -263,9 +263,9 @@ class AdamW(OptimizerV2):
             'weight_decays': self.weight_decays,
             'use_cosine_annealing': self.use_cosine_annealing,
             't_cur': int(K.get_value(self.t_cur)),
-            'eta_t': int(K.get_value(self.eta_t)),
-            'eta_min': int(K.get_value(self.eta_min)),
-            'eta_max': int(K.get_value(self.eta_max)),
+            'eta_t': float(K.get_value(self.eta_t)),
+            'eta_min': float(K.get_value(self.eta_min)),
+            'eta_max': float(K.get_value(self.eta_max)),
             'init_verbose': self.init_verbose
         })
         return config
@@ -515,9 +515,9 @@ class NadamW(OptimizerV2):
             'weight_decays': self.weight_decays,
             'use_cosine_annealing': self.use_cosine_annealing,
             't_cur': int(K.get_value(self.t_cur)),
-            'eta_t': int(K.get_value(self.eta_t)),
-            'eta_min': int(K.get_value(self.eta_min)),
-            'eta_max': int(K.get_value(self.eta_max)),
+            'eta_t': float(K.get_value(self.eta_t)),
+            'eta_min': float(K.get_value(self.eta_min)),
+            'eta_max': float(K.get_value(self.eta_max)),
             'init_verbose': self.init_verbose
         })
         return config
@@ -683,9 +683,9 @@ class SGDW(OptimizerV2):
             'weight_decays': self.weight_decays,
             'use_cosine_annealing': self.use_cosine_annealing,
             't_cur': int(K.get_value(self.t_cur)),
-            'eta_t': int(K.get_value(self.eta_t)),
-            'eta_min': int(K.get_value(self.eta_min)),
-            'eta_max': int(K.get_value(self.eta_max)),
+            'eta_t': float(K.get_value(self.eta_t)),
+            'eta_min': float(K.get_value(self.eta_min)),
+            'eta_max': float(K.get_value(self.eta_max)),
             'init_verbose': self.init_verbose
         })
         return config

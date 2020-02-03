@@ -30,6 +30,8 @@ Not configured to be installed via `!pip` or `git pull`; simply clone or downloa
 
 ## Usage
 
+If using tensorflow.keras imports, set `import os; os.environ["TF_KERAS"]='1'`.
+
 ### Weight decay 
 `AdamW(.., weight_decays=weight_decays)`<br>
 Two methods to set `weight_decays = {<weight matrix name>:<weight decay value>,}`:
@@ -63,8 +65,7 @@ weight_decays.update({'conv1d_0/kernel:0':1e-4}) # example
 from keras.layers import Input, Dense, LSTM
 from keras.models import Model
 from keras.regularizers import l2
-from keras_adamw.optimizers import AdamW
-from keras_adamw.utils import get_weight_decays, fill_dict_in_order
+from keras_adamw import AdamW, get_weight_decays, fill_dict_in_order
 import numpy as np 
 
 ipt   = Input(shape=(120,4))
