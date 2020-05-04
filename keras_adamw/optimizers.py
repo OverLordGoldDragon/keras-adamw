@@ -1,15 +1,26 @@
+import numpy as np
 from keras import backend as K
 from keras.legacy import interfaces
 from keras.optimizers import Optimizer
-import numpy as np
+from .utils_common import _init_weight_decays, _check_args
+from .utils_common import K_eval as KE
 from .utils import _apply_weight_decays, _compute_eta_t
-from .utils import _apply_lr_multiplier, _check_args, K_eval
+from .utils import _apply_lr_multiplier
+
+
+def K_eval(x):
+    return KE(x, K)
 
 
 class AdamW(Optimizer):
     """AdamW optimizer.
     Default parameters follow those provided in the original paper.
     # Arguments
+        model: keras.Model/tf.keras.Model. Pass as first positional argument
+            to constructor (AdamW(model, ...)). If passed, automatically extracts
+            weight penalties from layers and overrides `weight_decays`.
+        zero_penalties: bool. If True and `model` is passed, will zero weight
+            penalties (loss-based). (RECOMMENDED; see README "Use guidelines").
         learning_rate: float >= 0. Learning rate.
         beta_1: float, 0 < beta < 1. Generally close to 1.
         beta_2: float, 0 < beta < 1. Generally close to 1.
@@ -51,7 +62,7 @@ class AdamW(Optimizer):
         - [2][Fixing Weight Decay Regularization in Adam]
              (https://arxiv.org/abs/1711.05101)
     """
-
+    @_init_weight_decays
     def __init__(self, learning_rate=0.001, beta_1=0.9, beta_2=0.999,
                  amsgrad=False, batch_size=32, total_iterations=0,
                  total_iterations_wd=None, use_cosine_annealing=False,
@@ -197,14 +208,14 @@ class NadamW(Optimizer):
         beta_1/beta_2: floats, 0 < beta < 1. Generally close to 1.
         epsilon: float >= 0. Fuzz factor. If `None`, defaults to `K.epsilon()`.
 
-    # Arguments (other): see AdamW
+    # Arguments (other): see help(AdamW)
 
     # References
         - [Nadam report](http://cs229.stanford.edu/proj2015/054_report.pdf)
         - [On the importance of initialization and momentum in deep learning]
           (http://www.cs.toronto.edu/~fritz/absps/momentum.pdf)
     """
-
+    @_init_weight_decays
     def __init__(self, learning_rate=0.002, beta_1=0.9, beta_2=0.999,
                  batch_size=32, total_iterations=0,
                  total_iterations_wd=None, use_cosine_annealing=False,
@@ -349,9 +360,9 @@ class SGDW(Optimizer):
         decay: float >= 0. Learning rate decay over each update.
         nesterov: boolean. Whether to apply Nesterov momentum.
 
-    # Arguments (other): see AdamW
+    # Arguments (other): see help(AdamW)
     """
-
+    @_init_weight_decays
     def __init__(self, learning_rate=0.01, momentum=0., nesterov=False,
                  batch_size=32, total_iterations=0,
                  total_iterations_wd=None, use_cosine_annealing=False,

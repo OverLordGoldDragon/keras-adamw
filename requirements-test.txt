@@ -3,3 +3,4 @@ twine>=1.15.0
 coverage
 nose
 pycodestyle
+Keras

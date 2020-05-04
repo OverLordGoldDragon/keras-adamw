@@ -4,9 +4,15 @@ from tensorflow.python.keras.optimizer_v2.optimizer_v2 import OptimizerV2
 from tensorflow.python.keras.optimizer_v2 import learning_rate_schedule
 from tensorflow.python.ops import array_ops, control_flow_ops, math_ops, state_ops
 from tensorflow.python.util.tf_export import keras_export
-import keras.backend as K
+from keras import backend as K
+from .utils_common import _init_weight_decays, _check_args
+from .utils_common import K_eval as KE
 from .utils import _apply_weight_decays, _compute_eta_t
-from .utils import _apply_lr_multiplier, _check_args, K_eval
+from .utils import _apply_lr_multiplier
+
+
+def K_eval(x):
+    return KE(x, K)
 
 
 @keras_export('keras.optimizers.AdamW')
@@ -15,6 +21,11 @@ class AdamW(OptimizerV2):
     Default parameters follow those provided in the original paper.
     For extended documentation, see optimizer_v2.Adam.__doc__.
     # Arguments
+        model: keras.Model/tf.keras.Model. Pass as first positional argument
+            to constructor (AdamW(model, ...)). If passed, automatically extracts
+            weight penalties from layers and overrides `weight_decays`.
+        zero_penalties: bool. If True and `model` is passed, will zero weight
+            penalties (loss-based). (RECOMMENDED; see README "Use guidelines").
         learning_rate: A Tensor or a floating point value.  The learning rate.
         beta_1: A float value or a constant float tensor. The exponential decay
             rate for the 1st moment estimates.
@@ -27,15 +38,15 @@ class AdamW(OptimizerV2):
             the paper "On the Convergence of Adam and beyond".
         name: Optional name for the operations created when applying gradients.
             Defaults to "Adam".  @compatibility(eager) When eager execution is
-            enabled, `learning_rate`, `beta_1`, `beta_2`, and `epsilon` can each be
-            a callable that takes no arguments and returns the actual value to use.
-            This can be useful for changing these values across different
+            enabled, `learning_rate`, `beta_1`, `beta_2`, and `epsilon` can each
+            be a callable that takes no arguments and returns the actual value
+            to use. This can be useful for changing these values across different
             invocations of optimizer functions. @end_compatibility
         **kwargs: keyword arguments. Allowed to be {`clipnorm`, `clipvalue`, `lr`,
             `decay`}. `clipnorm` is clip gradients by norm; `clipvalue` is clip
             gradients by value, `decay` is included for backward compatibility to
-            allow time inverse decay of learning rate. `lr` is included for backward
-            compatibility, recommended to use `learning_rate` instead.
+            allow time inverse decay of learning rate. `lr` is included for
+            backward compatibility, recommended to use `learning_rate` instead.
 
         batch_size:       int >= 1. Train input batch size; used for normalization
         total_iterations: int >= 0. Total expected iterations / weight updates
@@ -72,7 +83,7 @@ class AdamW(OptimizerV2):
         - [2][Fixing Weight Decay Regularization in Adam]
              (https://arxiv.org/abs/1711.05101)
     """
-
+    @_init_weight_decays
     def __init__(self, learning_rate=0.001, beta_1=0.9, beta_2=0.999,
                  epsilon=None, decay=0., amsgrad=False,
                  batch_size=32, total_iterations=0,
@@ -294,7 +305,7 @@ class NadamW(OptimizerV2):
         allow time inverse decay of learning rate. `lr` is included for backward
         compatibility, recommended to use `learning_rate` instead.
 
-    # Arguments (other): see AdamW
+    # Arguments (other): see help(AdamW)
 
     # References
         - [Nadam report](http://cs229.stanford.edu/proj2015/054_report.pdf)
@@ -303,9 +314,9 @@ class NadamW(OptimizerV2):
         - [Fixing Weight Decay Regularization in Adam]
           (https://arxiv.org/abs/1711.05101)
     """
-
-    def __init__(self, learning_rate=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-7,
-                 batch_size=32, total_iterations=0,
+    @_init_weight_decays
+    def __init__(self, learning_rate=0.001, beta_1=0.9, beta_2=0.999,
+                 epsilon=1e-7, batch_size=32, total_iterations=0,
                  total_iterations_wd=None, use_cosine_annealing=False,
                  weight_decays=None, lr_multipliers=None, init_verbose=True,
                  eta_min=0, eta_max=1, t_cur=0, name="AdamW", **kwargs):
@@ -536,12 +547,12 @@ class SGDW(OptimizerV2):
         **kwargs: keyword arguments. Allowed to be {`clipnorm`, `clipvalue`, `lr`,
             `decay`}. `clipnorm` is clip gradients by norm; `clipvalue` is clip
             gradients by value, `decay` is included for backward compatibility to
-            allow time inverse decay of learning rate. `lr` is included for backward
-            compatibility, recommended to use `learning_rate` instead.
+            allow time inverse decay of learning rate. `lr` is included for
+            backward compatibility, recommended to use `learning_rate` instead.
 
-    # Arguments (other): see AdamW
+    # Arguments (other): see help(AdamW)
     """
-
+    @_init_weight_decays
     def __init__(self, learning_rate=0.01, momentum=0.0, nesterov=False,
                  batch_size=32, total_iterations=0,
                  total_iterations_wd=None, use_cosine_annealing=False,

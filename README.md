@@ -3,6 +3,7 @@
 [![Build Status](https://travis-ci.com/OverLordGoldDragon/keras-adamw.svg?token=dGKzzAxzJjaRLzddNsCd&branch=master)](https://travis-ci.com/OverLordGoldDragon/keras-adamw)
 [![Coverage Status](https://coveralls.io/repos/github/OverLordGoldDragon/keras-adamw/badge.svg?branch=master&service=github)](https://coveralls.io/github/OverLordGoldDragon/keras-adamw)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/1215c1605ad545cba419ee6e5cc870f5)](https://www.codacy.com?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=OverLordGoldDragon/keras-adamw&amp;utm_campaign=Badge_Grade)
+[![PyPI version](https://badge.fury.io/py/keras-adamw.svg)](https://badge.fury.io/py/keras-adamw)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
 ![](https://img.shields.io/badge/keras-tensorflow-blue.svg)
@@ -22,7 +23,7 @@ Keras implementation of **AdamW**, **SGDW**, **NadamW**, and **Warm Restarts**, 
    - _Better generalization_ and _faster convergence_ was shown by authors for various data and model sizes
  - **LR multipliers**: _per-layer_ learning rate multipliers. _Why use?_
    - _Pretraining_; if adding new layers to pretrained layers, using a global `lr` is prone to overfitting
-   
+
 
 ## Installation
 
@@ -32,19 +33,25 @@ Not configured to be installed via `!pip` or `git pull`; simply clone or downloa
 
 If using tensorflow.keras imports, set `import os; os.environ["TF_KERAS"]='1'`.
 
-### Weight decay 
-`AdamW(.., weight_decays=weight_decays)`<br>
-Two methods to set `weight_decays = {<weight matrix name>:<weight decay value>,}`:
+### Weight decay
+`AdamW(model)`<br>
+Three methods to set `weight_decays = {<weight matrix name>:<weight decay value>,}`:
 
 ```python
-# 1. Use keras_adamw.utils.py
+# 1. Automatically
+Just pass in `model` (`AdamW(model)`), and decays will be automatically extracted.
+Loss-based penalties (l1, l2, l1_l2) will be zeroed by default, but can be kept via
+`zero_penalties=False` (NOT recommended, see Use guidelines).
+```
+```python
+# 2. Use keras_adamw.utils_common.py
 Dense(.., kernel_regularizer=l2(0)) # set weight decays in layers as usual, but to ZERO
 wd_dict = get_weight_decays(model)
 ordered_values = [1e-4, 1e-3, ..] # print(wd_dict) to see returned matrix names, note their order
 weight_decays = fill_dict_in_order(wd_dict, ordered_values)
 ```
 ```python
-# 2. Fill manually
+# 3. Fill manually
 model.layers[1].kernel.name # get name of kernel weight matrix of layer indexed 1
 weight_decays.update({'conv1d_0/kernel:0':1e-4}) # example
 ```
@@ -59,37 +66,36 @@ weight_decays.update({'conv1d_0/kernel:0':1e-4}) # example
  (b) Get every layer name, note which to modify: `[print(idx,layer.name) for idx,layer in enumerate(model.layers)]`
  2. (a) `lr_multipliers = {'conv1d_0':0.1} # target layer by full name` - OR<br>
  (b) `lr_multipliers = {'conv1d':0.1}   # target all layers w/ name substring 'conv1d'`
- 
- ## Example 
+
+ ## Example
 ```python
+import numpy as np
 from keras.layers import Input, Dense, LSTM
 from keras.models import Model
-from keras.regularizers import l2
-from keras_adamw import AdamW, get_weight_decays, fill_dict_in_order
-import numpy as np 
+from keras.regularizers import l1, l2, l1_l2
+from keras_adamw import AdamW
 
 ipt   = Input(shape=(120,4))
-x     = LSTM(60, activation='relu',    recurrent_regularizer=l2(0), name='lstm_1')(ipt)
-out   = Dense(1, activation='sigmoid', kernel_regularizer   =l2(0), name='output')(x)
+x     = LSTM(60, activation='relu', name='lstm_1',
+             kernel_regularizer=l1(1e-4), recurrent_regularizer=l2(2e-4))(ipt)
+out   = Dense(1, activation='sigmoid', kernel_regularizer=l1_l2(1e-4))(x)
 model = Model(ipt,out)
 ```
 ```python
-wd_dict        = get_weight_decays(model)                # {'lstm_1/recurrent:0':0,   'output/kernel:0':0}
-weight_decays  = fill_dict_in_order(wd_dict,[4e-4,1e-4]) # {'lstm_1/recurrent:0':4e-4,'output/kernel:0':1e-4}
 lr_multipliers = {'lstm_1':0.5}
 
-optimizer = AdamW(lr=1e-4, weight_decays=weight_decays, lr_multipliers=lr_multipliers,
+optimizer = AdamW(model, lr=1e-4, lr_multipliers=lr_multipliers,
                   use_cosine_annealing=True, total_iterations=24)
 model.compile(optimizer, loss='binary_crossentropy')
 ```
 ```python
 for epoch in range(3):
     for iteration in range(24):
-        x = np.random.rand(10,120,4) # dummy data
-        y = np.random.randint(0,2,(10,1)) # dummy labels
-        loss = model.train_on_batch(x,y)
-        print("Iter {} loss: {}".format(iteration+1, "%.3f"%loss))
-    print("EPOCH {} COMPLETED".format(epoch+1))
+        x = np.random.rand(10, 120, 4) # dummy data
+        y = np.random.randint(0, 2, (10, 1)) # dummy labels
+        loss = model.train_on_batch(x, y)
+        print("Iter {} loss: {}".format(iteration + 1, "%.3f" % loss))
+    print("EPOCH {} COMPLETED\n".format(epoch + 1))
     K.set_value(model.optimizer.t_cur, 0) # WARM RESTART: reset cosine annealing argument
 ```
 <img src="https://user-images.githubusercontent.com/16495490/65729113-2063d400-e08b-11e9-8b6a-3a2ea1c62fdd.png" width="450">
@@ -100,8 +106,8 @@ for epoch in range(3):
 ### Weight decay
  - **Set L2 penalty to ZERO** if regularizing a weight via `weight_decays` - else the purpose of the 'fix' is largely defeated, and weights will be over-decayed --_My recommendation_
  - `lambda = lambda_norm * sqrt(batch_size/total_iterations)` --> _can be changed_; the intent is to scale λ to _decouple_ it from other hyperparams - including (but _not limited to_), train duration & batch size. --_Authors_ (Appendix, pg.1) (A-1)
- - `total_iterations_wd` --> set to normalize over _all epochs_ (or other interval `!= total_iterations`) instead of per-WR when using WR; I've seen better results with this scheme. --_My recommendation, against authors'_
- 
+ - `total_iterations_wd` --> set to normalize over _all epochs_ (or other interval `!= total_iterations`) instead of per-WR when using WR; may _sometimes_ yield better results --_My note_
+
 ### Warm restarts
  - Set `t_cur = 0` to restart schedule multiplier (see _Example_). Can be done at compilation or during training. Non-`0` is also valid, and will start `eta_t` at another point on the cosine curve. Details in A-2,3
  - Set `total_iterations` to the # of expected weight updates _for the given restart_ --_Authors_ (A-1,2)

@@ -8,11 +8,11 @@ if [[ "$TF_VERSION" == "1.14.0" ]] && [[ "$KERAS_VERSION" == "2.2.5" ]]; then
     else
         TESTDIR=tests/test_optimizers_225
     fi
-elif [[ "$TF_VERSION" == "2.0.0" ]] && [[ "$KERAS_VERSION" == "2.3.0" ]]; then
+elif [[ "$TF_VERSION" == "2.1.0" ]] && [[ "$KERAS_VERSION" == "2.3.0" ]]; then
     if [[ "$TF_KERAS" == "True" ]]; then
         TESTDIR=tests/test_optimizers_v2
     else
-	TESTDIR=tests/test_optimizers
+        TESTDIR=tests/test_optimizers
     fi
 fi
 
