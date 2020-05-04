@@ -4,13 +4,21 @@ from tensorflow.python.ops import math_ops
 
 
 def _apply_weight_decays(cls, var, var_t):
-    wd = cls.weight_decays[var.name]
-    wd_normalized = wd * math_ops.sqrt(cls.batch_size / cls.total_iterations_wd)
-    wdn_printable = wd * (cls.batch_size / cls.total_iterations_wd) ** (1/2)
-    var_t = var_t - cls.eta_t * wd_normalized * var
+    l1, l2 = cls.weight_decays[var.name]
+    norm = math_ops.sqrt(cls.batch_size / cls.total_iterations_wd)
+    l1_normalized = l1 * norm
+    l2_normalized = l2 * norm
+
+    norm_printable = (cls.batch_size / cls.total_iterations_wd) ** (1 / 2)
+    l1n_printable = l1 * norm_printable
+    l2n_printable = l2 * norm_printable
+
+    var_t = var_t - cls.eta_t * (l1_normalized * var +
+                                 l2_normalized * math_ops.sign(var))
 
     if cls.init_verbose and not cls._init_notified:
-        print('{} weight decay set for {}'.format(wdn_printable, var.name))
+        decays_str = "{}(L1), {}(L2)".format(l1n_printable, l2n_printable)
+        print('{} weight decay set for {}'.format(decays_str, var.name))
     return var_t
 
 

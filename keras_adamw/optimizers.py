@@ -2,9 +2,14 @@ import numpy as np
 from keras import backend as K
 from keras.legacy import interfaces
 from keras.optimizers import Optimizer
-from .utils_common import _init_weight_decays, _check_args, K_eval
+from .utils_common import _init_weight_decays, _check_args
+from .utils_common import K_eval as KE
 from .utils import _apply_weight_decays, _compute_eta_t
 from .utils import _apply_lr_multiplier
+
+
+def K_eval(x):
+    return KE(x, K)
 
 
 class AdamW(Optimizer):

@@ -15,8 +15,8 @@ def _apply_weight_decays(cls, var, var_t):
                                  l2_normalized * K.sign(var))
 
     if cls.init_verbose and not cls._init_notified:
-        decays_str = "{}(L1), {}(L2)".format(round(K_eval(l1_normalized), 5),
-                                             round(K_eval(l2_normalized), 5))
+        decays_str = "{}(L1), {}(L2)".format(K_eval(l1_normalized),
+                                             K_eval(l2_normalized))
         print('{} weight decay set for {}'.format(decays_str, var.name))
     return var_t
 
@@ -44,5 +44,5 @@ def _apply_lr_multiplier(cls, lr_t, var):
                '%.e' % round(K_eval(lr_t), 5), var.name, lr_t))
         else:
             print('No change in learning rate {} -- {}'.format(
-                                              var.name, round(K_eval(lr_t), 5)))
+                                              var.name, K_eval(lr_t)))
     return lr_t

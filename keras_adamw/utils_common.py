@@ -33,7 +33,8 @@ def get_weight_decays(model, zero_penalties=False, verbose=1):
         if layer_penalties:
             for p in layer_penalties:
                 weight_name, weight_penalty = p
-                wd_dict.update({weight_name: weight_penalty})
+                if not all(wp == 0 for wp in weight_penalty):
+                    wd_dict.update({weight_name: weight_penalty})
     return wd_dict
 
 

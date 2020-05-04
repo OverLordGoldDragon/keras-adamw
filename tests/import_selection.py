@@ -9,14 +9,14 @@ if TF_KERAS:
     import tensorflow.keras.backend as K
     from tensorflow.keras.layers import Input, Dense, GRU, Bidirectional, Embedding
     from tensorflow.keras.models import Model, load_model
-    from tensorflow.keras.regularizers import l2
+    from tensorflow.keras.regularizers import l1, l2, l1_l2
     from tensorflow.keras.constraints import MaxNorm as maxnorm
     from tensorflow.keras.optimizers import Adam, Nadam, SGD
 else:
     import keras.backend as K
     from keras.layers import Input, Dense, GRU, Bidirectional, Embedding
     from keras.models import Model, load_model
-    from keras.regularizers import l2
+    from keras.regularizers import l1, l2, l1_l2
     from keras.constraints import MaxNorm as maxnorm
     from keras.optimizers import Adam, Nadam, SGD
 

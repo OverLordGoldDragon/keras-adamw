@@ -10,7 +10,7 @@ from unittest import TestCase
 from .. import K
 from .. import Input, Dense, GRU, Bidirectional, Embedding
 from .. import Model, load_model
-from .. import l2
+from .. import l1, l2, l1_l2
 from .. import maxnorm
 from .. import Adam, Nadam, SGD
 from keras_adamw import AdamW, NadamW, SGDW
@@ -19,8 +19,8 @@ from keras_adamw import K_eval
 
 
 print("TF version: %s" % tf.__version__)
-TF_EAGER = bool(os.environ["TF_EAGER"] == "True")
-if TF_EAGER:
+tf_eager = bool(os.environ["TF_EAGER"] == "True")
+if tf_eager:
     print("TF running eagerly")
 else:
     tf.compat.v1.disable_eager_execution()
@@ -39,7 +39,8 @@ class TestOptimizers(TestCase):
             batch_shape = (batch_size, timesteps, num_channels)
             total_iterations = num_batches  # due to warm restarts
 
-            self.model = self._make_model(batch_shape, total_iterations)
+            self.model = self._make_model(batch_shape, total_iterations,
+                                          l1_reg=1e-4, l2_reg=1e-4)
             optimizer = self._make_optimizer(optimizer_name, self.model,
                                              total_iterations)
             self.model.compile(optimizer, loss='binary_crossentropy')
@@ -56,7 +57,7 @@ class TestOptimizers(TestCase):
                     self.eta_history += [K_eval(self.model.optimizer.eta_t, K)]
                     self.model.train_on_batch(X[batch_num], Y[batch_num])
                     self.eta_history += [K_eval(self.model.optimizer.eta_t, K)]
-                    self.eta_history.pop(-(1 + int(TF_EAGER)))
+                    self.eta_history.pop(-(1 + int(tf_eager)))
                 K.set_value(self.model.optimizer.t_cur, 0)
 
             self.assertTrue(self._valid_cosine_annealing(self.eta_history,
@@ -220,23 +221,35 @@ class TestOptimizers(TestCase):
         return X, Y
 
     @staticmethod
-    def _make_model(batch_shape, total_iterations, l2_reg=0, bidirectional=True,
-                    dense_constraint=None, embed_input_dim=None, sparse=False):
+    def _make_model(batch_shape, total_iterations, l1_reg=0, l2_reg=0,
+                    bidirectional=True, dense_constraint=None,
+                    embed_input_dim=None, sparse=False):
+        def _make_reg(l1_reg, l2_reg):
+            if l1_reg and not l2_reg:
+                return l1(l1_reg)
+            elif not l1_reg and l2_reg:
+                return l2(l2_reg)
+            elif l1_reg and l2_reg:
+                return l1_l2(l1_reg + l2_reg)
+            else:
+                return None
+        reg = _make_reg(l1_reg, l2_reg)
+
         if dense_constraint is not None:
             dense_constraint = maxnorm(dense_constraint)
 
         ipt = Input(batch_shape=batch_shape)
         if sparse:
-            x = Embedding(embed_input_dim, embed_input_dim*3 + 1,
+            x = Embedding(embed_input_dim, embed_input_dim * 3 + 1,
                           mask_zero=True)(ipt)
         else:
             x = ipt
-        gru = GRU(4, recurrent_regularizer=l2(l2_reg), bias_regularizer=l2(l2_reg))
+        gru = GRU(4, recurrent_regularizer=reg, bias_regularizer=reg)
         if bidirectional:
             x = Bidirectional(gru)(x)
         else:
             x = gru(x)
-        x = Dense(2, kernel_regularizer=l2(l2_reg),
+        x = Dense(2, kernel_regularizer=reg,
                   kernel_constraint=dense_constraint)(x)
         if sparse:
             out = Dense(2, activation='softmax')(x)
@@ -268,7 +281,7 @@ class TestOptimizers(TestCase):
             use_cosine_annealing = False
 
         if not any([optimizer_name == name for name in ('Adam', 'Nadam', 'SGD')]):
-            return optimizer(lr=1e-4, lr_multipliers=lr_multipliers,
+            return optimizer(model, lr=1e-4, lr_multipliers=lr_multipliers,
                              use_cosine_annealing=use_cosine_annealing, t_cur=0,
                              total_iterations=total_iterations, **optimizer_kw)
         else:

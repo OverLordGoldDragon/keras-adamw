@@ -5,9 +5,14 @@ from tensorflow.python.keras.optimizer_v2 import learning_rate_schedule
 from tensorflow.python.ops import array_ops, control_flow_ops, math_ops, state_ops
 from tensorflow.python.util.tf_export import keras_export
 from keras import backend as K
-from .utils_common import _init_weight_decays, _check_args, K_eval
+from .utils_common import _init_weight_decays, _check_args
+from .utils_common import K_eval as KE
 from .utils import _apply_weight_decays, _compute_eta_t
 from .utils import _apply_lr_multiplier
+
+
+def K_eval(x):
+    return KE(x, K)
 
 
 @keras_export('keras.optimizers.AdamW')
