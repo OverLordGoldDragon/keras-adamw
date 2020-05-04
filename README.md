@@ -94,7 +94,7 @@ for epoch in range(3):
         y = np.random.randint(0, 2, (10, 1)) # dummy labels
         loss = model.train_on_batch(x, y)
         print("Iter {} loss: {}".format(iteration + 1, "%.3f" % loss))
-    print("EPOCH {} COMPLETED".format(epoch + 1))
+    print("EPOCH {} COMPLETED\n".format(epoch + 1))
     K.set_value(model.optimizer.t_cur, 0) # WARM RESTART: reset cosine annealing argument
 ```
 <img src="https://user-images.githubusercontent.com/16495490/65729113-2063d400-e08b-11e9-8b6a-3a2ea1c62fdd.png" width="450">

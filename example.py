@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from keras_adamw import AdamW
+from keras_adamw.utils_common import K_eval
 
 
 ipt   = Input(shape=(120,4))
@@ -26,9 +27,9 @@ for epoch in range(3):
         x = np.random.rand(10, 120, 4)  # dummy data
         y = np.random.randint(0, 2, (10, 1))  # dummy labels
         loss = model.train_on_batch(x, y)
-        eta_history.append(K.get_value(model.optimizer.eta_t))
+        eta_history.append(K_eval(model.optimizer.eta_t, K))
         print("Iter {} loss: {}".format(iteration + 1, "%.3f" % loss))
-    print("EPOCH {} COMPLETED".format(epoch + 1))
+    print("EPOCH {} COMPLETED\n".format(epoch + 1))
     K.set_value(model.optimizer.t_cur, 0)  # WARM RESTART
 
 plt.plot(eta_history, linewidth=2)
