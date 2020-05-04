@@ -3,6 +3,7 @@
 [![Build Status](https://travis-ci.com/OverLordGoldDragon/keras-adamw.svg?token=dGKzzAxzJjaRLzddNsCd&branch=master)](https://travis-ci.com/OverLordGoldDragon/keras-adamw)
 [![Coverage Status](https://coveralls.io/repos/github/OverLordGoldDragon/keras-adamw/badge.svg?branch=master&service=github)](https://coveralls.io/github/OverLordGoldDragon/keras-adamw)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/1215c1605ad545cba419ee6e5cc870f5)](https://www.codacy.com?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=OverLordGoldDragon/keras-adamw&amp;utm_campaign=Badge_Grade)
+[![PyPI version](https://badge.fury.io/py/keras-adamw.svg)](https://badge.fury.io/py/keras-adamw)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
 ![](https://img.shields.io/badge/keras-tensorflow-blue.svg)
@@ -43,7 +44,7 @@ Loss-based penalties (l1, l2, l1_l2) will be zeroed by default, but can be kept 
 `zero_penalties=False` (NOT recommended, see Use guidelines).
 ```
 ```python
-# 2. Use keras_adamw.utils.py
+# 2. Use keras_adamw.utils_common.py
 Dense(.., kernel_regularizer=l2(0)) # set weight decays in layers as usual, but to ZERO
 wd_dict = get_weight_decays(model)
 ordered_values = [1e-4, 1e-3, ..] # print(wd_dict) to see returned matrix names, note their order
@@ -105,7 +106,7 @@ for epoch in range(3):
 ### Weight decay
  - **Set L2 penalty to ZERO** if regularizing a weight via `weight_decays` - else the purpose of the 'fix' is largely defeated, and weights will be over-decayed --_My recommendation_
  - `lambda = lambda_norm * sqrt(batch_size/total_iterations)` --> _can be changed_; the intent is to scale λ to _decouple_ it from other hyperparams - including (but _not limited to_), train duration & batch size. --_Authors_ (Appendix, pg.1) (A-1)
- - `total_iterations_wd` --> set to normalize over _all epochs_ (or other interval `!= total_iterations`) instead of per-WR when using WR; I've seen better results with this scheme. --_My recommendation, against authors'_
+ - `total_iterations_wd` --> set to normalize over _all epochs_ (or other interval `!= total_iterations`) instead of per-WR when using WR; may _sometimes_ yield better results --_My note_
 
 ### Warm restarts
  - Set `t_cur = 0` to restart schedule multiplier (see _Example_). Can be done at compilation or during training. Non-`0` is also valid, and will start `eta_t` at another point on the cosine curve. Details in A-2,3
