@@ -14,7 +14,7 @@ from .. import l1, l2, l1_l2
 from .. import maxnorm
 from .. import Adam, Nadam, SGD
 from keras_adamw import AdamW, NadamW, SGDW
-from keras_adamw import reset_seeds, get_weight_decays
+from keras_adamw import reset_seeds, fill_dict_in_order, get_weight_decays
 from keras_adamw import K_eval as KE
 
 K_eval = lambda x: KE(x, K)
@@ -99,6 +99,12 @@ class TestOptimizers(TestCase):
                 self.model.train_on_batch(X[batch_num], Y[batch_num])
 
             self._test_save_load(self.model, X, optimizer_name, optimizer)
+
+            # util test
+            dc = {'lstm': 0, 'dense': 0}
+            fill_dict_in_order(dc, [1e-4, 2e-4])
+            AdamW(self.model, zero_penalties=True)
+            AdamW(self.model, weight_decays={'a': 0})
 
             # cleanup
             del self.model, optimizer

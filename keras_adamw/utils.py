@@ -3,7 +3,8 @@ from .utils_common import K_eval as KE
 '''Helper methods for optimizers
 '''
 
-K_eval = lambda x: KE(x, K)
+def K_eval(x):
+    return KE(x, K)
 
 
 def _apply_weight_decays(cls, var, var_t):

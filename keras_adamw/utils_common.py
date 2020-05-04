@@ -38,9 +38,9 @@ def get_weight_decays(model, zero_penalties=False, verbose=1):
     return wd_dict
 
 
-def fill_dict_in_order(_dict, _list_of_vals):
+def fill_dict_in_order(_dict, values_list):
     for idx, key in enumerate(_dict.keys()):
-        _dict[key] = _list_of_vals[idx]
+        _dict[key] = values_list[idx]
     return _dict
 
 
@@ -121,11 +121,5 @@ def K_eval(x, backend):
     try:
         return K.get_value(K.to_dense(x))
     except Exception as e:
-        try:
-            eval_fn = K.function([], [x])
-            return eval_fn([])[0]
-        except Exception as e:
-            try:
-                return K.eager(K.eval)(x)
-            except:
-                return K.eval(x)
+        eval_fn = K.function([], [x])
+        return eval_fn([])[0]
