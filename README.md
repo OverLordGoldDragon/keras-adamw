@@ -35,7 +35,7 @@ If using tensorflow.keras imports, set `import os; os.environ["TF_KERAS"]='1'`.
 
 ### Weight decay
 `AdamW(model)`<br>
-Three methods to set `weight_decays = {<weight matrix name>:<weight decay value>,}`:
+Three methods to set `weight_decays = {<weight matrix name>:<l1, l2 penalty tuple>,}`:
 
 ```python
 # 1. Automatically
@@ -47,13 +47,15 @@ Loss-based penalties (l1, l2, l1_l2) will be zeroed by default, but can be kept 
 # 2. Use keras_adamw.utils_common.py
 Dense(.., kernel_regularizer=l2(0)) # set weight decays in layers as usual, but to ZERO
 wd_dict = get_weight_decays(model)
-ordered_values = [1e-4, 1e-3, ..] # print(wd_dict) to see returned matrix names, note their order
+# print(wd_dict) to see returned matrix names, note their order
+# specify values as (l1, l2) tuples, both for l1_l2 decay
+ordered_values = [(0, 1e-3), (1e-4, 2e-4), ..]
 weight_decays = fill_dict_in_order(wd_dict, ordered_values)
 ```
 ```python
 # 3. Fill manually
 model.layers[1].kernel.name # get name of kernel weight matrix of layer indexed 1
-weight_decays.update({'conv1d_0/kernel:0':1e-4}) # example
+weight_decays.update({'conv1d_0/kernel:0': (1e-4, 0)}) # example
 ```
 
 ### Warm restarts
@@ -75,14 +77,14 @@ from keras.models import Model
 from keras.regularizers import l1, l2, l1_l2
 from keras_adamw import AdamW
 
-ipt   = Input(shape=(120,4))
+ipt   = Input(shape=(120, 4))
 x     = LSTM(60, activation='relu', name='lstm_1',
              kernel_regularizer=l1(1e-4), recurrent_regularizer=l2(2e-4))(ipt)
 out   = Dense(1, activation='sigmoid', kernel_regularizer=l1_l2(1e-4))(x)
-model = Model(ipt,out)
+model = Model(ipt, out)
 ```
 ```python
-lr_multipliers = {'lstm_1':0.5}
+lr_multipliers = {'lstm_1': 0.5}
 
 optimizer = AdamW(model, lr=1e-4, lr_multipliers=lr_multipliers,
                   use_cosine_annealing=True, total_iterations=24)
