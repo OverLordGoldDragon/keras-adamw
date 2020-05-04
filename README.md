@@ -27,7 +27,7 @@ Keras implementation of **AdamW**, **SGDW**, **NadamW**, and **Warm Restarts**, 
 
 ## Installation
 
-Not configured to be installed via `!pip` or `git pull`; simply clone or download zip and extract needed modules - only those in the [keras_adamw](https://github.com/OverLordGoldDragon/keras-adamw/tree/master/keras_adamw) folder are needed.
+`pip install keras-adamw` or clone repository
 
 ## Usage
 

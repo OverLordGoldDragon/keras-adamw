@@ -27,15 +27,21 @@ def find_version(*file_paths):
 setup(
     name="keras-adamw",
     version=find_version("keras_adamw", "__init__.py"),
-    packages=find_packages(),
+    packages=find_packages(exclude=['tests']),
     url="https://github.com/OverLordGoldDragon/keras-adamw",
     license='MIT',
     author="OverLordGoldDragon",
+    author_email="16495490+OverLordGoldDragon@users.noreply.github.com",
     description=("Keras implementation of AdamW, SGDW, NadamW, "
                  "Warm Restarts, and Learning Rate multipliers"),
     long_description=read_file('README.md'),
     long_description_content_type='text/markdown',
+    keywords=(
+        "tensorflow keras optimizers adamw adamwr nadam sgd "
+        "learning-rate-multipliers warm-restarts"
+    ),
     install_requires=get_requirements('requirements.txt'),
+    zip_safe=True,
     classifiers=[
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
