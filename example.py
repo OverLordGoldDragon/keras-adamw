@@ -1,17 +1,18 @@
 from keras.layers import Input, Dense, LSTM
 from keras.models import Model
-from keras.regularizers import l2
-import keras.backend as K
+from keras.regularizers import l1, l2, l1_l2
+from keras import backend as K
 import numpy as np
 import matplotlib.pyplot as plt
 
 from keras_adamw import AdamW
 
 
-ipt = Input(shape=(120, 4))
-x = LSTM(60, activation='relu', recurrent_regularizer=l2(0), name='lstm_1')(ipt)
-out = Dense(1, activation='sigmoid', kernel_regularizer=l2(0), name='output')(x)
-model = Model(ipt, out)
+ipt   = Input(shape=(120,4))
+x     = LSTM(60, activation='relu', name='lstm_1',
+             kernel_regularizer=l1(1e-4), recurrent_regularizer=l2(2e-4))(ipt)
+out   = Dense(1, activation='sigmoid', kernel_regularizer=l1_l2(1e-4))(x)
+model = Model(ipt,out)
 
 lr_multipliers = {'lstm_1': 0.5}
 

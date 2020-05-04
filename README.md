@@ -39,9 +39,10 @@ Three methods to set `weight_decays = {<weight matrix name>:<weight decay value>
 ```python
 # 1. Automatically
 Just pass in `model` (`AdamW(model)`), and decays will be automatically extracted.
-Loss-based penalties (l1, l2, l1l2) will be zeroed by default, but can be kept via
+Loss-based penalties (l1, l2, l1_l2) will be zeroed by default, but can be kept via
 `zero_penalties=False` (NOT recommended, see Use guidelines).
-
+```
+```python
 # 2. Use keras_adamw.utils.py
 Dense(.., kernel_regularizer=l2(0)) # set weight decays in layers as usual, but to ZERO
 wd_dict = get_weight_decays(model)
@@ -70,12 +71,13 @@ weight_decays.update({'conv1d_0/kernel:0':1e-4}) # example
 import numpy as np
 from keras.layers import Input, Dense, LSTM
 from keras.models import Model
-from keras.regularizers import l2
+from keras.regularizers import l1, l2, l1_l2
 from keras_adamw import AdamW
 
 ipt   = Input(shape=(120,4))
-x     = LSTM(60, activation='relu',    recurrent_regularizer=l2(0), name='lstm_1')(ipt)
-out   = Dense(1, activation='sigmoid', kernel_regularizer   =l2(0), name='output')(x)
+x     = LSTM(60, activation='relu', name='lstm_1',
+             kernel_regularizer=l1(1e-4), recurrent_regularizer=l2(2e-4))(ipt)
+out   = Dense(1, activation='sigmoid', kernel_regularizer=l1_l2(1e-4))(x)
 model = Model(ipt,out)
 ```
 ```python
@@ -88,11 +90,11 @@ model.compile(optimizer, loss='binary_crossentropy')
 ```python
 for epoch in range(3):
     for iteration in range(24):
-        x = np.random.rand(10,120,4) # dummy data
-        y = np.random.randint(0,2,(10,1)) # dummy labels
-        loss = model.train_on_batch(x,y)
-        print("Iter {} loss: {}".format(iteration+1, "%.3f"%loss))
-    print("EPOCH {} COMPLETED".format(epoch+1))
+        x = np.random.rand(10, 120, 4) # dummy data
+        y = np.random.randint(0, 2, (10, 1)) # dummy labels
+        loss = model.train_on_batch(x, y)
+        print("Iter {} loss: {}".format(iteration + 1, "%.3f" % loss))
+    print("EPOCH {} COMPLETED".format(epoch + 1))
     K.set_value(model.optimizer.t_cur, 0) # WARM RESTART: reset cosine annealing argument
 ```
 <img src="https://user-images.githubusercontent.com/16495490/65729113-2063d400-e08b-11e9-8b6a-3a2ea1c62fdd.png" width="450">
