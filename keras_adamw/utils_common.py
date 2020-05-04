@@ -120,12 +120,12 @@ def K_eval(x, backend):
     K = backend
     try:
         return K.get_value(K.to_dense(x))
-    except Exception as e:
+    except Exception:
         try:
             eval_fn = K.function([], [x])
             return eval_fn([])[0]
-        except Exception as e:
+        except Exception:
             try:
                 return K.eager(K.eval)(x)
-            except:
+            except Exception:
                 return K.eval(x)
