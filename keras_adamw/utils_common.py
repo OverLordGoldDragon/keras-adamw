@@ -10,7 +10,7 @@ WARN = colored('WARNING:', 'red')
 
 def _init_weight_decays(init_fn):
     def get_and_zero_decays(cls, model=None, **kwargs):
-        zero_penalties = kwargs.get('zero_penalties', True)
+        zero_penalties = kwargs.pop('zero_penalties', True)
         weight_decays = kwargs.pop('weight_decays', None)
         if not zero_penalties:
             print(WARN, "loss-based weight penalties should be set to zero. "
