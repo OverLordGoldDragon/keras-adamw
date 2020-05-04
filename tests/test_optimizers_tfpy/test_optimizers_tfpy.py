@@ -28,7 +28,7 @@ else:
 
 class TestOptimizers(TestCase):
 
-    def test_all(self):  # Save/Load, Warm Restarts (w/ cosine annealing)
+    def test_main(self):  # Save/Load, Warm Restarts (w/ cosine annealing)
         for optimizer_name in ['AdamW', 'NadamW', 'SGDW']:
             cprint("<< TESTING {} OPTIMIZER >>".format(optimizer_name), 'blue')
             reset_seeds()

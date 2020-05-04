@@ -5,8 +5,7 @@ import keras.backend as K
 import numpy as np
 import matplotlib.pyplot as plt
 
-from keras_adamw.optimizers import AdamW
-from keras_adamw.utils import get_weight_decays, fill_dict_in_order
+from keras_adamw import AdamW
 
 
 ipt = Input(shape=(120, 4))
@@ -14,11 +13,9 @@ x = LSTM(60, activation='relu', recurrent_regularizer=l2(0), name='lstm_1')(ipt)
 out = Dense(1, activation='sigmoid', kernel_regularizer=l2(0), name='output')(x)
 model = Model(ipt, out)
 
-wd_dict = get_weight_decays(model)
-weight_decays = fill_dict_in_order(wd_dict, [4e-4, 1e-4])
 lr_multipliers = {'lstm_1': 0.5}
 
-optimizer = AdamW(lr=1e-4, weight_decays=weight_decays, lr_multipliers=lr_multipliers,
+optimizer = AdamW(model, lr=1e-4, lr_multipliers=lr_multipliers,
                   use_cosine_annealing=True, total_iterations=24)
 model.compile(optimizer, loss='binary_crossentropy')
 

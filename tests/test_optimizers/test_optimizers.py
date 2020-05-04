@@ -14,7 +14,10 @@ from .. import l2
 from .. import maxnorm
 from .. import Adam, Nadam, SGD
 from keras_adamw import AdamW, NadamW, SGDW
-from keras_adamw import get_weight_decays, fill_dict_in_order, reset_seeds, K_eval
+from keras_adamw import reset_seeds, get_weight_decays
+from keras_adamw import K_eval as KE
+
+K_eval = lambda x: KE(x, K)
 
 
 print("TF version: %s" % tf.__version__)
@@ -28,7 +31,7 @@ else:
 
 class TestOptimizers(TestCase):
 
-    def test_all(self):  # Save/Load, Warm Restarts (w/ cosine annealing)
+    def test_main(self):  # Save/Load, Warm Restarts (w/ cosine annealing)
         for optimizer_name in ['AdamW', 'NadamW', 'SGDW']:
             cprint("<< TESTING {} OPTIMIZER >>".format(optimizer_name), 'blue')
             reset_seeds()
@@ -260,17 +263,14 @@ class TestOptimizers(TestCase):
             optimizer_kw.update({'decay': decay})
 
         if not control_mode:
-            wd_dict = get_weight_decays(model)
-            l2_extra = [2e-5]*(len(wd_dict) - 3)
-            wd = fill_dict_in_order(wd_dict, [1e-5, 1e-5, 1e-6] + l2_extra)
-            lr_m = {'gru': 0.5}
+            lr_multipliers = {'gru': 0.5}
             use_cosine_annealing = True
         else:
-            wd, lr_m = None, None
+            lr_multipliers = None, None
             use_cosine_annealing = False
 
         if not any([optimizer_name == name for name in ('Adam', 'Nadam', 'SGD')]):
-            return optimizer(lr=1e-4, weight_decays=wd, lr_multipliers=lr_m,
+            return optimizer(model, lr=1e-4, lr_multipliers=lr_multipliers,
                              use_cosine_annealing=use_cosine_annealing, t_cur=0,
                              total_iterations=total_iterations, **optimizer_kw)
         else:
@@ -279,10 +279,7 @@ class TestOptimizers(TestCase):
     @staticmethod
     def _valid_weight_decays(model):
         weight_decays = get_weight_decays(model)
-        trues = 0
-        for wd in weight_decays.values():
-            trues += (wd != 0)
-        return (trues == 0)
+        return all(x == 0 for l1l2 in weight_decays.values() for x in l1l2)
 
     @staticmethod
     def _valid_cosine_annealing(eta_history, total_iterations, num_epochs):

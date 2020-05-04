@@ -2,7 +2,6 @@
    NOTE: if using `tensorflow.keras` imports, use `os.environ["TF_KERAS"] = '1'`,
          else the default '0' will be assumed for `keras` imports.
 """
-
 import os
 import tensorflow as tf
 
@@ -20,11 +19,8 @@ else:
     else:
         from .optimizers_225 import AdamW, NadamW, SGDW
 
-if TF_KERAS and not TF_2:
-    from .utils_225tf import get_weight_decays, fill_dict_in_order
-    from .utils_225tf import reset_seeds, K_eval
-else:
-    from .utils import get_weight_decays, fill_dict_in_order
-    from .utils import reset_seeds, K_eval
+from .utils_common import get_weight_decays, fill_dict_in_order
+from .utils_common import reset_seeds, K_eval
 
-__version__ = '1.15'
+
+__version__ = '1.2'

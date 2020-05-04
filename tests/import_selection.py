@@ -20,12 +20,8 @@ else:
     from keras.constraints import MaxNorm as maxnorm
     from keras.optimizers import Adam, Nadam, SGD
 
-if (not TF_2) and TF_KERAS:
-    from keras_adamw.utils_225tf import get_weight_decays, fill_dict_in_order
-    from keras_adamw.utils_225tf import reset_seeds, K_eval
-else:
-    from keras_adamw.utils import get_weight_decays, fill_dict_in_order
-    from keras_adamw.utils import reset_seeds, K_eval
+from keras_adamw import get_weight_decays, fill_dict_in_order
+from keras_adamw import reset_seeds, K_eval
 
 
 # ALL TESTS (6 total):
