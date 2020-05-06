@@ -8,22 +8,16 @@ from termcolor import colored
 WARN = colored('WARNING:', 'red')
 
 
-def _init_weight_decays(init_fn):
-    def get_and_zero_decays(cls, model=None, **kwargs):
-        zero_penalties = kwargs.pop('zero_penalties', True)
-        weight_decays = kwargs.pop('weight_decays', None)
-        if not zero_penalties:
-            print(WARN, "loss-based weight penalties should be set to zero. "
-                  "(set `zero_penalties=True`)")
-
-        if weight_decays is not None and model is not None:
-            print(WARN, "`weight_decays` is set automatically when "
-                  "passing in `model`; will override supplied")
-        if model is not None:
-            weight_decays = get_weight_decays(model, zero_penalties)
-
-        init_fn(cls, weight_decays=weight_decays, **kwargs)
-    return get_and_zero_decays
+def _init_weight_decays(model, zero_penalties, weight_decays):
+    if not zero_penalties:
+        print(WARN, "loss-based weight penalties should be set to zero. "
+              "(set `zero_penalties=True`)")
+    if weight_decays is not None and model is not None:
+        print(WARN, "`weight_decays` is set automatically when "
+              "passing in `model`; will override supplied")
+    if model is not None:
+        weight_decays = get_weight_decays(model, zero_penalties)
+    return weight_decays
 
 
 def get_weight_decays(model, zero_penalties=False, verbose=1):

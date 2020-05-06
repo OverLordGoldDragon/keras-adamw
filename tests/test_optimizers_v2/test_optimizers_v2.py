@@ -103,8 +103,8 @@ class TestOptimizers(TestCase):
             # util test
             dc = {'lstm': 0, 'dense': 0}
             fill_dict_in_order(dc, [1e-4, 2e-4])
-            AdamW(self.model, zero_penalties=True)
-            AdamW(self.model, weight_decays={'a': 0})
+            AdamW(model=self.model, zero_penalties=True)
+            AdamW(model=self.model, weight_decays={'a': 0})
 
             # cleanup
             del self.model, optimizer
@@ -287,7 +287,7 @@ class TestOptimizers(TestCase):
             use_cosine_annealing = False
 
         if not any([optimizer_name == name for name in ('Adam', 'Nadam', 'SGD')]):
-            return optimizer(model, lr=1e-4, lr_multipliers=lr_multipliers,
+            return optimizer(lr=1e-4, model=model, lr_multipliers=lr_multipliers,
                              use_cosine_annealing=use_cosine_annealing, t_cur=0,
                              total_iterations=total_iterations, **optimizer_kw)
         else:

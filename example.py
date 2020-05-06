@@ -13,11 +13,11 @@ ipt   = Input(shape=(120,4))
 x     = LSTM(60, activation='relu', name='lstm_1',
              kernel_regularizer=l1(1e-4), recurrent_regularizer=l2(2e-4))(ipt)
 out   = Dense(1, activation='sigmoid', kernel_regularizer=l1_l2(1e-4))(x)
-model = Model(ipt,out)
+model = Model(ipt, out)
 
 lr_multipliers = {'lstm_1': 0.5}
 
-optimizer = AdamW(model, lr=1e-4, lr_multipliers=lr_multipliers,
+optimizer = AdamW(lr=1e-4, model=model, lr_multipliers=lr_multipliers,
                   use_cosine_annealing=True, total_iterations=24)
 model.compile(optimizer, loss='binary_crossentropy')
 

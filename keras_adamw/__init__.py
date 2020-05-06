@@ -5,6 +5,12 @@
 import os
 import tensorflow as tf
 
+try:
+    import keras
+    KERAS_23 = bool(keras.__version__[:3] == '2.3')
+except:
+    KERAS_23 = None
+
 TF_KERAS = bool(os.environ.get("TF_KERAS", '0') == '1')
 TF_2 = bool(tf.__version__[0] == '2')
 
@@ -14,7 +20,7 @@ if TF_KERAS:
     else:
         from .optimizers_225tf import AdamW, NadamW, SGDW
 else:
-    if TF_2:
+    if TF_2 or KERAS_23:
         from .optimizers import AdamW, NadamW, SGDW
     else:
         from .optimizers_225 import AdamW, NadamW, SGDW
@@ -23,4 +29,4 @@ from .utils_common import get_weight_decays, fill_dict_in_order
 from .utils_common import reset_seeds, K_eval
 
 
-__version__ = '1.2'
+__version__ = '1.21'

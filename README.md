@@ -34,12 +34,13 @@ Keras implementation of **AdamW**, **SGDW**, **NadamW**, and **Warm Restarts**, 
 If using tensorflow.keras imports, set `import os; os.environ["TF_KERAS"]='1'`.
 
 ### Weight decay
-`AdamW(model)`<br>
-Three methods to set `weight_decays = {<weight matrix name>:<l1, l2 penalty tuple>,}`:
+
+`AdamW(model=model)`<br>
+Three methods to set `weight_decays = {<weight matrix name>:<weight decay value>,}`:
 
 ```python
 # 1. Automatically
-Just pass in `model` (`AdamW(model)`), and decays will be automatically extracted.
+Just pass in `model` (`AdamW(model=model)`), and decays will be automatically extracted.
 Loss-based penalties (l1, l2, l1_l2) will be zeroed by default, but can be kept via
 `zero_penalties=False` (NOT recommended, see Use guidelines).
 ```
@@ -86,7 +87,7 @@ model = Model(ipt, out)
 ```python
 lr_multipliers = {'lstm_1': 0.5}
 
-optimizer = AdamW(model, lr=1e-4, lr_multipliers=lr_multipliers,
+optimizer = AdamW(lr=1e-4, model=model, lr_multipliers=lr_multipliers,
                   use_cosine_annealing=True, total_iterations=24)
 model.compile(optimizer, loss='binary_crossentropy')
 ```
