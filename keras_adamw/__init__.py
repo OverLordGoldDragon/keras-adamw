@@ -29,4 +29,4 @@ from .utils_common import get_weight_decays, fill_dict_in_order
 from .utils_common import reset_seeds, K_eval
 
 
-__version__ = '1.2'
+__version__ = '1.21'
