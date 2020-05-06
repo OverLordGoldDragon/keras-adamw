@@ -43,13 +43,17 @@ class AdamW(OptimizerV2):
             allow time inverse decay of learning rate. `lr` is included for
             backward compatibility, recommended to use `learning_rate` instead.
 
+        model: keras.Model/tf.keras.Model/None. If not None, automatically
+            extracts weight penalties from layers, and overrides `weight_decays`.
+        zero_penalties: bool. If True and `model` is passed, will zero weight
+            penalties (loss-based). (RECOMMENDED; see README "Use guidelines").
         batch_size:       int >= 1. Train input batch size; used for normalization
         total_iterations: int >= 0. Total expected iterations / weight updates
                           throughout training, used for normalization; <1>
-        weight_decays:    dict / None. Name-value pairs specifying weight decays,
-                          as {<weight matrix name>:<weight decay value>}; <2>
         lr_multipliers:   dict / None. Name-value pairs specifying per-layer lr
                           multipliers, as {<layer name>:<multiplier value>}; <2>
+        weight_decays:    dict / None. Name-value pairs specifying weight decays,
+                          as {<weight matrix name>:<weight decay value>}; <2>
 
         use_cosine_annealing: bool. If True, multiplies lr each train iteration
                               as a function of eta_min, eta_max, total_iterations,
@@ -81,9 +85,10 @@ class AdamW(OptimizerV2):
     @_init_weight_decays
     def __init__(self, learning_rate=0.001, beta_1=0.9, beta_2=0.999,
                  epsilon=None, decay=0., amsgrad=False,
-                 batch_size=32, total_iterations=0,
-                 total_iterations_wd=None, use_cosine_annealing=False,
-                 weight_decays=None, lr_multipliers=None, init_verbose=True,
+                 model=None, zero_penalties=True, batch_size=32,
+                 total_iterations=0, total_iterations_wd=None,
+                 use_cosine_annealing=False, lr_multipliers=None,
+                 weight_decays=None, init_verbose=True,
                  eta_min=0, eta_max=1, t_cur=0, name="AdamW", **kwargs):
         eta_t = kwargs.pop('eta_t', 1.)
 
@@ -303,21 +308,54 @@ class NadamW(OptimizerV2):
         allow time inverse decay of learning rate. `lr` is included for backward
         compatibility, recommended to use `learning_rate` instead.
 
-    # Arguments (other): see help(AdamW)
+        model: keras.Model/tf.keras.Model/None. If not None, automatically
+            extracts weight penalties from layers, and overrides `weight_decays`.
+        zero_penalties: bool. If True and `model` is passed, will zero weight
+            penalties (loss-based). (RECOMMENDED; see README "Use guidelines").
+        batch_size:       int >= 1. Train input batch size; used for normalization
+        total_iterations: int >= 0. Total expected iterations / weight updates
+                          throughout training, used for normalization; <1>
+        lr_multipliers:   dict / None. Name-value pairs specifying per-layer lr
+                          multipliers, as {<layer name>:<multiplier value>}; <2>
+        weight_decays:    dict / None. Name-value pairs specifying weight decays,
+                          as {<weight matrix name>:<weight decay value>}; <2>
+
+        use_cosine_annealing: bool. If True, multiplies lr each train iteration
+                              as a function of eta_min, eta_max, total_iterations,
+                              and t_cur (current); [3]-Appendix, 2
+        eta_min, eta_max: int, int. Min & max values of cosine annealing
+                          lr multiplier; [3]-Appendix, 2
+        t_cur: int. Value to initialize t_cur to - used for 'warm restarts'.
+               To be used together with use_cosine_annealing==True
+        total_iterations_wd: int / None. If not None, weight_decays will be
+                     applied according to total_iterations_wd instead of
+                     total_iterations, contrary to authors' scheme. Set to
+                     sum(total_iterations) over all restarts to normalize over
+                     all epochs. May yield improvement over `None`.
+        init_verbose: bool. If True, print weight-name--weight-decay, and
+                      lr-multiplier--layer-name value pairs set during
+                      optimizer initialization (recommended)
+
+    # <1> - if using 'warm restarts', then refers to total expected iterations
+        for a given restart; can be an estimate, and training won't stop
+        at iterations == total_iterations. [3]-Appendix, pg 1
+    # <2> - [AdamW Keras Implementation - Github repository]
+            (https://github.com/OverLordGoldDragon/keras_adamw)
 
     # References
-        - [Nadam report](http://cs229.stanford.edu/proj2015/054_report.pdf)
-        - [On the importance of initialization and momentum in deep learning]
-          (http://www.cs.toronto.edu/~fritz/absps/momentum.pdf)
-        - [Fixing Weight Decay Regularization in Adam]
-          (https://arxiv.org/abs/1711.05101)
+        - [1][Nadam report](http://cs229.stanford.edu/proj2015/054_report.pdf)
+        - [2][On the importance of initialization and momentum in deep learning]
+             (http://www.cs.toronto.edu/~fritz/absps/momentum.pdf)
+        - [3][Fixing Weight Decay Regularization in Adam]
+             (https://arxiv.org/abs/1711.05101)
     """
     @_init_weight_decays
     def __init__(self, learning_rate=0.001, beta_1=0.9, beta_2=0.999,
-                 epsilon=1e-7, batch_size=32, total_iterations=0,
-                 total_iterations_wd=None, use_cosine_annealing=False,
-                 weight_decays=None, lr_multipliers=None, init_verbose=True,
-                 eta_min=0, eta_max=1, t_cur=0, name="AdamW", **kwargs):
+                 epsilon=1e-7, model=None, zero_penalties=True,
+                 batch_size=32, total_iterations=0, total_iterations_wd=None,
+                 use_cosine_annealing=False, lr_multipliers=None,
+                 weight_decays=None, init_verbose=True,
+                 eta_min=0, eta_max=1, t_cur=0, name="NadamW", **kwargs):
 
         # Backwards compatibility with keras NAdam optimizer.
         kwargs['decay'] = kwargs.pop('schedule_decay', 0.004)
@@ -549,14 +587,53 @@ class SGDW(OptimizerV2):
             allow time inverse decay of learning rate. `lr` is included for
             backward compatibility, recommended to use `learning_rate` instead.
 
-    # Arguments (other): see help(AdamW)
+        model: keras.Model/tf.keras.Model/None. If not None, automatically
+            extracts weight penalties from layers, and overrides `weight_decays`.
+        zero_penalties: bool. If True and `model` is passed, will zero weight
+            penalties (loss-based). (RECOMMENDED; see README "Use guidelines").
+        batch_size:       int >= 1. Train input batch size; used for normalization
+        total_iterations: int >= 0. Total expected iterations / weight updates
+                          throughout training, used for normalization; <1>
+        lr_multipliers:   dict / None. Name-value pairs specifying per-layer lr
+                          multipliers, as {<layer name>:<multiplier value>}; <2>
+        weight_decays:    dict / None. Name-value pairs specifying weight decays,
+                          as {<weight matrix name>:<weight decay value>}; <2>
+
+        use_cosine_annealing: bool. If True, multiplies lr each train iteration
+                              as a function of eta_min, eta_max, total_iterations,
+                              and t_cur (current); [2]-Appendix, 2
+        eta_min, eta_max: int, int. Min & max values of cosine annealing
+                          lr multiplier; [2]-Appendix, 2
+        t_cur: int. Value to initialize t_cur to - used for 'warm restarts'.
+               To be used together with use_cosine_annealing==True
+        total_iterations_wd: int / None. If not None, weight_decays will be
+                     applied according to total_iterations_wd instead of
+                     total_iterations, contrary to authors' scheme. Set to
+                     sum(total_iterations) over all restarts to normalize over
+                     all epochs. May yield improvement over `None`.
+        init_verbose: bool. If True, print weight-name--weight-decay, and
+                      lr-multiplier--layer-name value pairs set during
+                      optimizer initialization (recommended)
+
+    # <1> - if using 'warm restarts', then refers to total expected iterations
+        for a given restart; can be an estimate, and training won't stop
+        at iterations == total_iterations. [2]-Appendix, pg 1
+    # <2> - [AdamW Keras Implementation - Github repository]
+        (https://github.com/OverLordGoldDragon/keras_adamw)
+
+    # References
+    - [1][Adam - A Method for Stochastic Optimization]
+         (http://arxiv.org/abs/1412.6980v8)
+    - [2][Fixing Weight Decay Regularization in Adam]
+         (https://arxiv.org/abs/1711.05101)
     """
     @_init_weight_decays
     def __init__(self, learning_rate=0.01, momentum=0.0, nesterov=False,
-                 batch_size=32, total_iterations=0,
-                 total_iterations_wd=None, use_cosine_annealing=False,
-                 weight_decays=None, lr_multipliers=None, init_verbose=True,
-                 eta_min=0, eta_max=1, t_cur=0, name="AdamW", **kwargs):
+                 model=None, zero_penalties=True, batch_size=32,
+                 total_iterations=0, total_iterations_wd=None,
+                 use_cosine_annealing=False, lr_multipliers=None,
+                 weight_decays=None, init_verbose=True,
+                 eta_min=0, eta_max=1, t_cur=0, name="SGDW", **kwargs):
 
         eta_t = kwargs.pop('eta_t', 1.)
         super(SGDW, self).__init__(name, **kwargs)
