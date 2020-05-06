@@ -55,13 +55,13 @@ class AdamW(Optimizer):
         - [2][Fixing Weight Decay Regularization in Adam]
              (https://arxiv.org/abs/1711.05101)
     """
-    @_init_weight_decays
     def __init__(self, lr=0.001, beta_1=0.9, beta_2=0.999, amsgrad=False,
                  epsilon=None, decay=0.0, model=None, zero_penalties=True,
                  batch_size=32, total_iterations=0, total_iterations_wd=None,
                  use_cosine_annealing=False, lr_multipliers=None,
                  weight_decays=None, init_verbose=True,
                  eta_min=0, eta_max=1, t_cur=0, **kwargs):
+        weight_decays = _init_weight_decays(model, zero_penalties, weight_decays)
         eta_t = kwargs.pop('eta_t', 1.)
         super(AdamW, self).__init__(**kwargs)
 
@@ -232,7 +232,6 @@ class NadamW(Optimizer):
         - [3][Fixing Weight Decay Regularization in Adam]
              (https://arxiv.org/abs/1711.05101)
     """
-    @_init_weight_decays
     def __init__(self, lr=0.002, beta_1=0.9, beta_2=0.999,
                  schedule_decay=0.004, epsilon=None,
                  model=None, zero_penalties=True, batch_size=32,
@@ -240,6 +239,7 @@ class NadamW(Optimizer):
                  use_cosine_annealing=False, lr_multipliers=None,
                  weight_decays=None, init_verbose=True,
                  eta_min=0, eta_max=1, t_cur=0, **kwargs):
+        weight_decays = _init_weight_decays(model, zero_penalties, weight_decays)
         eta_t = kwargs.pop('eta_t', 1.)
         super(NadamW, self).__init__(**kwargs)
 
@@ -406,13 +406,13 @@ class SGDW(Optimizer):
     - [2][Fixing Weight Decay Regularization in Adam]
          (https://arxiv.org/abs/1711.05101)
     """
-    @_init_weight_decays
     def __init__(self, lr=0.01, momentum=0., nesterov=False, decay=0.0,
                  model=None, zero_penalties=True, batch_size=32,
                  total_iterations=0, total_iterations_wd=None,
                  use_cosine_annealing=False, lr_multipliers=None,
                  weight_decays=None, init_verbose=True,
                  eta_min=0, eta_max=1, t_cur=0, **kwargs):
+        weight_decays = _init_weight_decays(model, zero_penalties, weight_decays)
         eta_t = kwargs.pop('eta_t', 1.)
         super(SGDW, self).__init__(**kwargs)
 
