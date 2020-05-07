@@ -18,11 +18,12 @@ def _apply_weight_decays(cls, var, var_t):
     l1n_printable = l1 * norm_printable
     l2n_printable = l2 * norm_printable
 
-    decay = 0
-    if l1 != 0:
-        decay = decay + l1_normalized * math_ops.sign(var)
-    if l2 != 0:
-        decay = decay + l2_normalized * var
+    if l1 != 0 and l2 != 0:
+        decay = l1_normalized * math_ops.sign(var) + l2_normalized * var
+    elif l1 != 0:
+        decay = l1_normalized * math_ops.sign(var)
+    else:
+        decay = l2_normalized * var
     var_t = var_t - cls.eta_t * decay
 
     if cls.init_verbose and not cls._init_notified:
