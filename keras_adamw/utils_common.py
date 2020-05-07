@@ -19,7 +19,7 @@ def _init_weight_decays(model, zero_penalties, weight_decays):
     return weight_decays
 
 
-def get_weight_decays(model, zero_penalties=False, verbose=1):
+def get_weight_decays(model, zero_penalties=False):
     wd_dict = {}
     for layer in model.layers:
         layer_penalties = _get_layer_penalties(layer, zero_penalties)
@@ -34,7 +34,7 @@ def get_weight_decays(model, zero_penalties=False, verbose=1):
 def _get_layer_penalties(layer, zero_penalties=False):
     if hasattr(layer, 'cell') or \
       (hasattr(layer, 'layer') and hasattr(layer.layer, 'cell')):
-        return _rnn_decays(layer, zero_penalties)
+        return _rnn_penalties(layer, zero_penalties)
     elif hasattr(layer, 'layer') and not hasattr(layer.layer, 'cell'):
         layer = layer.layer
 
@@ -50,17 +50,17 @@ def _get_layer_penalties(layer, zero_penalties=False):
     return penalties
 
 
-def _rnn_decays(layer, zero_penalties=False):
+def _rnn_penalties(layer, zero_penalties=False):
     penalties = []
     if hasattr(layer, 'backward_layer'):
         for layer in [layer.forward_layer, layer.backward_layer]:
-            penalties += _cell_l2regs(layer.cell, zero_penalties)
+            penalties += _cell_penalties(layer.cell, zero_penalties)
         return penalties
     else:
-        return _cell_l2regs(layer.cell, zero_penalties)
+        return _cell_penalties(layer.cell, zero_penalties)
 
 
-def _cell_l2regs(rnn_cell, zero_penalties=False):
+def _cell_penalties(rnn_cell, zero_penalties=False):
     cell = rnn_cell
     penalties = []  # kernel-recurrent-bias
 
