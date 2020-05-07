@@ -3,17 +3,29 @@ from .utils_common import K_eval as KE
 '''Helper methods for optimizers
 '''
 
+
 def K_eval(x):
     return KE(x, K)
 
 
 def _apply_weight_decays(cls, var, var_t):
     l1, l2 = cls.weight_decays[var.name]
+    if l1 == 0 and l2 == 0:
+        if cls.init_verbose and not cls._init_notified:
+            print("Both penalties are 0 for %s, will skip" % var.name)
+        return var_t
+
     norm = K.cast(K.sqrt(cls.batch_size / cls.total_iterations_wd), 'float32')
     l1_normalized = l1 * norm
     l2_normalized = l2 * norm
-    var_t = var_t - cls.eta_t * (l1_normalized * var +
-                                 l2_normalized * K.sign(var))
+
+    if l1 != 0 and l2 != 0:
+        decay = l1_normalized * K.sign(var) + l2_normalized * var
+    elif l1 != 0:
+        decay = l1_normalized * K.sign(var)
+    else:
+        decay = l2_normalized * var
+    var_t = var_t - cls.eta_t * decay
 
     if cls.init_verbose and not cls._init_notified:
         decays_str = "{}(L1), {}(L2)".format(K_eval(l1_normalized),

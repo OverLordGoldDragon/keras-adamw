@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import random
 import numpy as np
 import tensorflow as tf
@@ -30,12 +29,6 @@ def get_weight_decays(model, zero_penalties=False, verbose=1):
                 if not all(wp == 0 for wp in weight_penalty):
                     wd_dict.update({weight_name: weight_penalty})
     return wd_dict
-
-
-def fill_dict_in_order(_dict, values_list):
-    for idx, key in enumerate(_dict.keys()):
-        _dict[key] = values_list[idx]
-    return _dict
 
 
 def _get_layer_penalties(layer, zero_penalties=False):
@@ -90,6 +83,12 @@ def _check_args(total_iterations, use_cosine_annealing, weight_decays):
         print(WARN, "'total_iterations'==0, must be !=0 to use "
               "cosine annealing and/or weight decays; "
               "proceeding without either")
+
+
+def fill_dict_in_order(_dict, values_list):
+    for idx, key in enumerate(_dict.keys()):
+        _dict[key] = values_list[idx]
+    return _dict
 
 
 def reset_seeds(reset_graph_with_backend=None, verbose=1):

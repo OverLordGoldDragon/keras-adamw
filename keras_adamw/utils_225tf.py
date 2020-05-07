@@ -5,6 +5,11 @@ from tensorflow.python.ops import math_ops
 
 def _apply_weight_decays(cls, var, var_t):
     l1, l2 = cls.weight_decays[var.name]
+    if l1 == 0 and l2 == 0:
+        if cls.init_verbose and not cls._init_notified:
+            print("Both penalties are 0 for %s, will skip" % var.name)
+        return var_t
+
     norm = math_ops.sqrt(cls.batch_size / cls.total_iterations_wd)
     l1_normalized = l1 * norm
     l2_normalized = l2 * norm
@@ -13,8 +18,13 @@ def _apply_weight_decays(cls, var, var_t):
     l1n_printable = l1 * norm_printable
     l2n_printable = l2 * norm_printable
 
-    var_t = var_t - cls.eta_t * (l1_normalized * var +
-                                 l2_normalized * math_ops.sign(var))
+    if l1 != 0 and l2 != 0:
+        decay = l1_normalized * math_ops.sign(var) + l2_normalized * var
+    elif l1 != 0:
+        decay = l1_normalized * math_ops.sign(var)
+    else:
+        decay = l2_normalized * var
+    var_t = var_t - cls.eta_t * decay
 
     if cls.init_verbose and not cls._init_notified:
         decays_str = "{}(L1), {}(L2)".format(l1n_printable, l2n_printable)
