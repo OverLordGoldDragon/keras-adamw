@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from keras_adamw import AdamW
-from keras_adamw.utils_common import K_eval
+from keras_adamw.utils import K_eval
 
 
 ipt   = Input(shape=(120,4))

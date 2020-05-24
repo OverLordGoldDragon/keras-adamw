@@ -4,11 +4,10 @@ from tensorflow.python.keras.optimizer_v2.optimizer_v2 import OptimizerV2
 from tensorflow.python.keras.optimizer_v2 import learning_rate_schedule
 from tensorflow.python.ops import array_ops, control_flow_ops, math_ops, state_ops
 from tensorflow.python.util.tf_export import keras_export
-from keras import backend as K
-from .utils_common import _init_weight_decays, _check_args
-from .utils_common import K_eval as KE
-from .utils import _apply_weight_decays, _compute_eta_t
-from .utils import _apply_lr_multiplier
+from tensorflow.python.keras import backend as K
+from .utils import _init_weight_decays, _check_args, _compute_eta_t
+from .utils import _apply_weight_decays, _apply_lr_multiplier
+from .utils import K_eval as KE
 
 
 def K_eval(x):
@@ -103,11 +102,11 @@ class AdamW(OptimizerV2):
         self._set_hyper('beta_1', beta_1)
         self._set_hyper('beta_2', beta_2)
 
-        self.batch_size = K.variable(batch_size, dtype='int64', name='batch_size')
         self.eta_min = K.constant(eta_min, name='eta_min')
         self.eta_max = K.constant(eta_max, name='eta_max')
         self.eta_t = K.variable(eta_t, dtype='float32', name='eta_t')
         self.t_cur = K.variable(t_cur, dtype='int64', name='t_cur')
+        self.batch_size = batch_size
         self.total_iterations = total_iterations
         self.total_iterations_wd = total_iterations_wd or total_iterations
         self.lr_multipliers = lr_multipliers
@@ -118,6 +117,7 @@ class AdamW(OptimizerV2):
         self.amsgrad = amsgrad
 
         _check_args(total_iterations, use_cosine_annealing, self.weight_decays)
+        self._init_lr = kwargs.get('lr', learning_rate)  # to print lr_mult setup
         self._updates_processed = 0  # to track num calls to '_resource_apply_...'
         self._init_notified = False
 
@@ -271,7 +271,7 @@ class AdamW(OptimizerV2):
             'beta_2': self._serialize_hyperparameter('beta_2'),
             'epsilon': self.epsilon,
             'amsgrad': self.amsgrad,
-            'batch_size': int(K_eval(self.batch_size)),
+            'batch_size': int(self.batch_size),
             'total_iterations': int(self.total_iterations),
             'weight_decays': self.weight_decays,
             'use_cosine_annealing': self.use_cosine_annealing,
@@ -376,11 +376,11 @@ class NadamW(OptimizerV2):
         self.epsilon = epsilon or backend_config.epsilon()
         self._m_cache = None
 
-        self.batch_size = K.variable(batch_size, dtype='int64', name='batch_size')
         self.eta_min = K.constant(eta_min, name='eta_min')
         self.eta_max = K.constant(eta_max, name='eta_max')
         self.eta_t = K.variable(eta_t, dtype='float32', name='eta_t')
         self.t_cur = K.variable(t_cur, dtype='int64', name='t_cur')
+        self.batch_size = batch_size
         self.total_iterations = total_iterations
         self.total_iterations_wd = total_iterations_wd or total_iterations
         self.lr_multipliers = lr_multipliers
@@ -390,6 +390,7 @@ class NadamW(OptimizerV2):
         self.epsilon = epsilon or backend_config.epsilon()
 
         _check_args(total_iterations, use_cosine_annealing, self.weight_decays)
+        self._init_lr = kwargs.get('lr', learning_rate)  # to print lr_mult setup
         self._updates_processed = 0  # to track num calls to '_resource_apply_...'
         self._init_notified = False
 
@@ -649,11 +650,11 @@ class SGDW(OptimizerV2):
         self._set_hyper("momentum", momentum)
 
         self.nesterov = nesterov
-        self.batch_size = K.variable(batch_size, dtype='int64', name='batch_size')
         self.eta_min = K.constant(eta_min, name='eta_min')
         self.eta_max = K.constant(eta_max, name='eta_max')
         self.eta_t = K.variable(eta_t, dtype='float32', name='eta_t')
         self.t_cur = K.variable(t_cur, dtype='int64', name='t_cur')
+        self.batch_size = batch_size
         self.total_iterations = total_iterations
         self.total_iterations_wd = total_iterations_wd or total_iterations
         self.lr_multipliers = lr_multipliers
@@ -662,6 +663,7 @@ class SGDW(OptimizerV2):
         self.use_cosine_annealing = use_cosine_annealing
 
         _check_args(total_iterations, use_cosine_annealing, self.weight_decays)
+        self._init_lr = kwargs.get('lr', learning_rate)  # to print lr_mult setup
         self._updates_processed = 0  # to track num calls to '_resource_apply_...'
         self._init_notified = False
 

@@ -5,9 +5,8 @@ from tensorflow.python.keras.optimizer_v2 import learning_rate_schedule
 from tensorflow.python.ops import array_ops, control_flow_ops, math_ops, state_ops
 from tensorflow.python.util.tf_export import keras_export
 from tensorflow.keras import backend as K
-from .utils_common import _init_weight_decays, _check_args
-from .utils_225tf import _apply_weight_decays, _compute_eta_t
-from .utils_225tf import _apply_lr_multiplier
+from .utils import _init_weight_decays, _check_args, _compute_eta_t
+from .utils import _apply_weight_decays, _apply_lr_multiplier
 
 
 @keras_export('keras.optimizers.AdamW')
@@ -113,6 +112,7 @@ class AdamW(OptimizerV2):
         self.amsgrad = amsgrad
 
         _check_args(total_iterations, use_cosine_annealing, self.weight_decays)
+        self._init_lr = kwargs.get('lr', learning_rate)  # to print lr_mult setup
         self._updates_processed = 0  # to track num calls to '_resource_apply_...'
         self._init_notified = False
         self._init_lr = kwargs.get('lr', learning_rate)
@@ -269,7 +269,7 @@ class AdamW(OptimizerV2):
             'beta_2': self._serialize_hyperparameter('beta_2'),
             'epsilon': self.epsilon,
             'amsgrad': self.amsgrad,
-            'batch_size': int(K.get_value(self.batch_size)),
+            'batch_size': int(self.batch_size),
             'total_iterations': int(self.total_iterations),
             'weight_decays': self.weight_decays,
             'use_cosine_annealing': self.use_cosine_annealing,
@@ -388,6 +388,7 @@ class NadamW(OptimizerV2):
         self.epsilon = epsilon or backend_config.epsilon()
 
         _check_args(total_iterations, use_cosine_annealing, self.weight_decays)
+        self._init_lr = kwargs.get('lr', learning_rate)  # to print lr_mult setup
         self._updates_processed = 0  # to track num calls to '_resource_apply_...'
         self._init_notified = False
         self._init_lr = kwargs.get('lr', learning_rate)
@@ -554,7 +555,7 @@ class NadamW(OptimizerV2):
             'beta_1': self._serialize_hyperparameter('beta_1'),
             'beta_2': self._serialize_hyperparameter('beta_2'),
             'epsilon': self.epsilon,
-            'batch_size': int(K.get_value(self.batch_size)),
+            'batch_size': int(self.batch_size),
             'total_iterations': int(self.total_iterations),
             'weight_decays': self.weight_decays,
             'use_cosine_annealing': self.use_cosine_annealing,
@@ -661,6 +662,7 @@ class SGDW(OptimizerV2):
         self.use_cosine_annealing = use_cosine_annealing
 
         _check_args(total_iterations, use_cosine_annealing, self.weight_decays)
+        self._init_lr = kwargs.get('lr', learning_rate)  # to print lr_mult setup
         self._updates_processed = 0  # to track num calls to '_resource_apply_...'
         self._init_notified = False
         self._init_lr = kwargs.get('lr', learning_rate)
@@ -761,7 +763,7 @@ class SGDW(OptimizerV2):
             "decay": self._serialize_hyperparameter("decay"),
             "momentum": self._serialize_hyperparameter("momentum"),
             "nesterov": self.nesterov,
-            'batch_size': int(K.get_value(self.batch_size)),
+            'batch_size': int(self.batch_size),
             'total_iterations': int(self.total_iterations),
             'weight_decays': self.weight_decays,
             'use_cosine_annealing': self.use_cosine_annealing,

@@ -1,9 +1,8 @@
 from keras import backend as K
 from keras.legacy import interfaces
 from keras.optimizers import Optimizer
-from .utils_common import _init_weight_decays, _check_args
-from .utils import _apply_weight_decays, _compute_eta_t
-from .utils import _apply_lr_multiplier
+from .utils import _init_weight_decays, _check_args, _compute_eta_t
+from .utils import _apply_weight_decays, _apply_lr_multiplier
 
 
 class AdamW(Optimizer):
@@ -71,8 +70,6 @@ class AdamW(Optimizer):
             self.beta_1 = K.variable(beta_1, name='beta_1')
             self.beta_2 = K.variable(beta_2, name='beta_2')
             self.decay = K.variable(decay, name='decay')
-            self.batch_size = K.variable(batch_size, dtype='int64',
-                                         name='batch_size')
             self.eta_min = K.constant(eta_min, name='eta_min')
             self.eta_max = K.constant(eta_max, name='eta_max')
             self.eta_t = K.variable(eta_t, dtype='float32', name='eta_t')
@@ -80,6 +77,7 @@ class AdamW(Optimizer):
 
         self.initial_decay = decay
         self.epsilon = epsilon or K.epsilon()
+        self.batch_size = batch_size
         self.total_iterations = total_iterations
         self.total_iterations_wd = total_iterations_wd or total_iterations
         self.amsgrad = amsgrad
@@ -88,8 +86,9 @@ class AdamW(Optimizer):
         self.init_verbose = init_verbose
         self.use_cosine_annealing = use_cosine_annealing
 
-        self._init_notified = False
         _check_args(total_iterations, use_cosine_annealing, self.weight_decays)
+        self._init_lr = lr  # to print lr_mult setup
+        self._init_notified = False
 
     @interfaces.legacy_get_updates_support
     def get_updates(self, loss, params):
@@ -159,7 +158,7 @@ class AdamW(Optimizer):
             'beta_1': float(K.get_value(self.beta_1)),
             'beta_2': float(K.get_value(self.beta_2)),
             'decay': float(K.get_value(self.decay)),
-            'batch_size': int(K.get_value(self.batch_size)),
+            'batch_size': int(self.batch_size),
             'total_iterations': int(self.total_iterations),
             'weight_decays': self.weight_decays,
             'lr_multipliers': self.lr_multipliers,
@@ -249,8 +248,6 @@ class NadamW(Optimizer):
             self.lr = K.variable(lr, name='lr')
             self.beta_1 = K.variable(beta_1, name='beta_1')
             self.beta_2 = K.variable(beta_2, name='beta_2')
-            self.batch_size = K.variable(batch_size, dtype='int64',
-                                         name='batch_size')
             self.eta_min = K.constant(eta_min, name='eta_min')
             self.eta_max = K.constant(eta_max, name='eta_max')
             self.eta_t = K.variable(eta_t, dtype='float32', name='eta_t')
@@ -258,6 +255,7 @@ class NadamW(Optimizer):
 
         self.epsilon = epsilon or K.epsilon()
         self.schedule_decay = schedule_decay
+        self.batch_size = batch_size
         self.total_iterations = total_iterations
         self.total_iterations_wd = total_iterations_wd or total_iterations
         self.lr_multipliers = lr_multipliers
@@ -265,8 +263,9 @@ class NadamW(Optimizer):
         self.use_cosine_annealing = use_cosine_annealing
         self.init_verbose = init_verbose
 
-        self._init_notified = False
         _check_args(total_iterations, use_cosine_annealing, self.weight_decays)
+        self._init_lr = lr  # to print lr_mult setup
+        self._init_notified = False
 
     @interfaces.legacy_get_updates_support
     def get_updates(self, loss, params):
@@ -338,7 +337,7 @@ class NadamW(Optimizer):
             'beta_2': float(K.get_value(self.beta_2)),
             'epsilon': self.epsilon,
             'schedule_decay': self.schedule_decay,
-            'batch_size': int(K.get_value(self.batch_size)),
+            'batch_size': int(self.batch_size),
             'total_iterations': int(self.total_iterations),
             'weight_decays': self.weight_decays,
             'lr_multipliers': self.lr_multipliers,
@@ -421,14 +420,13 @@ class SGDW(Optimizer):
             self.lr = K.variable(lr, name='lr')
             self.momentum = K.variable(momentum, name='momentum')
             self.decay = K.variable(decay, name='decay')
-            self.batch_size = K.variable(batch_size, dtype='int64',
-                                         name='batch_size')
             self.eta_min = K.constant(eta_min, name='eta_min')
             self.eta_max = K.constant(eta_max, name='eta_max')
             self.eta_t = K.variable(eta_t, dtype='float32', name='eta_t')
             self.t_cur = K.variable(t_cur, dtype='int64', name='t_cur')
 
         self.initial_decay = decay
+        self.batch_size = batch_size
         self.total_iterations = total_iterations
         self.total_iterations_wd = total_iterations_wd or total_iterations
         self.nesterov = nesterov
@@ -437,8 +435,10 @@ class SGDW(Optimizer):
         self.init_verbose = init_verbose
         self.use_cosine_annealing = use_cosine_annealing
 
-        self._init_notified = False
         _check_args(total_iterations, use_cosine_annealing, self.weight_decays)
+        self._init_lr = lr  # to print lr_mult setup
+        self._init_notified = False
+
 
     @interfaces.legacy_get_updates_support
     def get_updates(self, loss, params):
@@ -495,7 +495,7 @@ class SGDW(Optimizer):
             'momentum': float(K.get_value(self.momentum)),
             'decay': float(K.get_value(self.decay)),
             'nesterov': self.nesterov,
-            'batch_size': int(K.get_value(self.batch_size)),
+            'batch_size': int(self.batch_size),
             'total_iterations': int(self.total_iterations),
             'weight_decays': self.weight_decays,
             'lr_multipliers': self.lr_multipliers,
