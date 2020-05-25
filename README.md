@@ -81,7 +81,7 @@ from keras_adamw import AdamW
 ipt   = Input(shape=(120, 4))
 x     = LSTM(60, activation='relu', name='lstm_1',
              kernel_regularizer=l1(1e-4), recurrent_regularizer=l2(2e-4))(ipt)
-out   = Dense(1, activation='sigmoid', kernel_regularizer=l1_l2(1e-4))(x)
+out   = Dense(1, activation='sigmoid', kernel_regularizer=l1_l2(1e-4, 2e-4))(x)
 model = Model(ipt, out)
 ```
 ```python
@@ -98,8 +98,9 @@ for epoch in range(3):
         y = np.random.randint(0, 2, (10, 1)) # dummy labels
         loss = model.train_on_batch(x, y)
         print("Iter {} loss: {}".format(iteration + 1, "%.3f" % loss))
+		if iteration == (24 - 2):
+		    K.set_value(model.optimizer.t_cur, -1) # WARM RESTART: reset cosine annealing argument
     print("EPOCH {} COMPLETED\n".format(epoch + 1))
-    K.set_value(model.optimizer.t_cur, 0) # WARM RESTART: reset cosine annealing argument
 ```
 <img src="https://user-images.githubusercontent.com/16495490/65729113-2063d400-e08b-11e9-8b6a-3a2ea1c62fdd.png" width="450">
 
@@ -112,7 +113,8 @@ for epoch in range(3):
  - `total_iterations_wd` --> set to normalize over _all epochs_ (or other interval `!= total_iterations`) instead of per-WR when using WR; may _sometimes_ yield better results --_My note_
 
 ### Warm restarts
- - Set `t_cur = 0` to restart schedule multiplier (see _Example_). Can be done at compilation or during training. Non-`0` is also valid, and will start `eta_t` at another point on the cosine curve. Details in A-2,3
+ - Set `t_cur = -1` to restart schedule multiplier (see _Example_). Can be done at compilation or during training. Non-`-1` is also valid, and will start `eta_t` at another point on the cosine curve. Details in A-2,3
+ - `t_cur` should be set at `iter == total_iterations - 2`; explanation [here](https://github.com/OverLordGoldDragon/keras-adamw/blob/master/tests/test_optimizers.py#L53)
  - Set `total_iterations` to the # of expected weight updates _for the given restart_ --_Authors_ (A-1,2)
  - `eta_min=0, eta_max=1` are tunable hyperparameters; e.g., an exponential schedule can be used for `eta_max`. If unsure, the defaults were shown to work well in the paper. --_Authors_
  - **[Save/load](https://keras.io/getting-started/faq/#how-can-i-save-a-keras-model) optimizer state**; WR relies on using the optimizer's update history for effective transitions --_Authors_ (A-2)

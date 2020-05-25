@@ -6,13 +6,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from keras_adamw import AdamW
-from keras_adamw.utils_common import K_eval
+from keras_adamw.utils import K_eval
 
 
 ipt   = Input(shape=(120,4))
 x     = LSTM(60, activation='relu', name='lstm_1',
              kernel_regularizer=l1(1e-4), recurrent_regularizer=l2(2e-4))(ipt)
-out   = Dense(1, activation='sigmoid', kernel_regularizer=l1_l2(1e-4))(x)
+out   = Dense(1, activation='sigmoid', kernel_regularizer=l1_l2(1e-4, 2e-4))(x)
 model = Model(ipt, out)
 
 lr_multipliers = {'lstm_1': 0.5}
@@ -29,8 +29,9 @@ for epoch in range(3):
         loss = model.train_on_batch(x, y)
         eta_history.append(K_eval(model.optimizer.eta_t, K))
         print("Iter {} loss: {}".format(iteration + 1, "%.3f" % loss))
+        if iteration == (24 - 2):
+            K.set_value(model.optimizer.t_cur, -1)  # WARM RESTART
     print("EPOCH {} COMPLETED\n".format(epoch + 1))
-    K.set_value(model.optimizer.t_cur, 0)  # WARM RESTART
 
 plt.plot(eta_history, linewidth=2)
 plt.xlim(0, len(eta_history))

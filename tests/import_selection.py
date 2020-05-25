@@ -6,14 +6,14 @@ TF_2 = bool(os.environ.get("TF_VERSION", '1')[0] == '2')
 
 
 if TF_KERAS:
-    import tensorflow.keras.backend as K
+    from tensorflow.keras import backend as K
     from tensorflow.keras.layers import Input, Dense, GRU, Bidirectional, Embedding
     from tensorflow.keras.models import Model, load_model
     from tensorflow.keras.regularizers import l1, l2, l1_l2
     from tensorflow.keras.constraints import MaxNorm as maxnorm
     from tensorflow.keras.optimizers import Adam, Nadam, SGD
 else:
-    import keras.backend as K
+    from keras import backend as K
     from keras.layers import Input, Dense, GRU, Bidirectional, Embedding
     from keras.models import Model, load_model
     from keras.regularizers import l1, l2, l1_l2
@@ -27,7 +27,7 @@ from keras_adamw import reset_seeds, K_eval
 # ALL TESTS (6 total):
 #  - keras    (TF 1.14.0, Keras 2.2.5) [test_optimizers.py]
 #  - tf.keras (TF 1.14.0, Keras 2.2.5) [test_optimizers_v2.py]
-#  - keras    (TF 2.0.0,  Keras 2.3.0) [test_optimizers.py     --TF_EAGER=True]
-#  - keras    (TF 2.0.0,  Keras 2.3.0) [test_optimizers.py     --TF_EAGER=False]
-#  - tf.keras (TF 2.0.0,  Keras 2.3.0) [test_optimizers_v2.py, --TF_EAGER=True]
-#  - tf.keras (TF 2.0.0,  Keras 2.3.0) [test_optimizers_v2.py, --TF_EAGER=False]
+#  - keras    (TF 2+,     Keras 2.3.0) [test_optimizers.py     --TF_EAGER=1]
+#  - keras    (TF 2+,     Keras 2.3.0) [test_optimizers.py     --TF_EAGER=0]
+#  - tf.keras (TF 2+,     Keras 2.3.0) [test_optimizers_v2.py, --TF_EAGER=1]
+#  - tf.keras (TF 2+,     Keras 2.3.0) [test_optimizers_v2.py, --TF_EAGER=0]

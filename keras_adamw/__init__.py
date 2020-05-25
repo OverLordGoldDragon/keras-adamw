@@ -25,8 +25,8 @@ else:
     else:
         from .optimizers_225 import AdamW, NadamW, SGDW
 
-from .utils_common import get_weight_decays, fill_dict_in_order
-from .utils_common import reset_seeds, K_eval
+from .utils import get_weight_decays, fill_dict_in_order
+from .utils import reset_seeds, K_eval
 
 
-__version__ = '1.23'
+__version__ = '1.3'

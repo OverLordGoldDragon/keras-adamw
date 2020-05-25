@@ -2,10 +2,9 @@ import numpy as np
 from keras import backend as K
 from keras.legacy import interfaces
 from keras.optimizers import Optimizer
-from .utils_common import _init_weight_decays, _check_args
-from .utils_common import K_eval as KE
-from .utils import _apply_weight_decays, _compute_eta_t
-from .utils import _apply_lr_multiplier
+from .utils import _init_weight_decays, _apply_weight_decays, _check_args
+from .utils import _apply_lr_multiplier, _update_t_cur_eta_t
+from .utils import K_eval as KE
 
 
 def K_eval(x):
@@ -72,7 +71,9 @@ class AdamW(Optimizer):
                  use_cosine_annealing=False, lr_multipliers=None,
                  weight_decays=None, init_verbose=True,
                  eta_min=0, eta_max=1, t_cur=0, **kwargs):
-        weight_decays = _init_weight_decays(model, zero_penalties, weight_decays)
+        if total_iterations > 1:
+            weight_decays = _init_weight_decays(model, zero_penalties,
+                                                weight_decays)
 
         self.initial_decay = kwargs.pop('decay', 0.0)
         self.epsilon = kwargs.pop('epsilon', K.epsilon())
@@ -86,13 +87,12 @@ class AdamW(Optimizer):
             self.beta_1 = K.variable(beta_1, name='beta_1')
             self.beta_2 = K.variable(beta_2, name='beta_2')
             self.decay = K.variable(self.initial_decay, name='decay')
-            self.batch_size = K.variable(batch_size, dtype='int64',
-                                         name='batch_size')
             self.eta_min = K.constant(eta_min, name='eta_min')
             self.eta_max = K.constant(eta_max, name='eta_max')
             self.eta_t = K.variable(eta_t, dtype='float32', name='eta_t')
             self.t_cur = K.variable(t_cur, dtype='int64', name='t_cur')
 
+        self.batch_size = batch_size
         self.total_iterations = total_iterations
         self.total_iterations_wd = total_iterations_wd or total_iterations
         self.amsgrad = amsgrad
@@ -101,15 +101,15 @@ class AdamW(Optimizer):
         self.init_verbose = init_verbose
         self.use_cosine_annealing = use_cosine_annealing
 
+        _check_args(self, total_iterations, use_cosine_annealing, weight_decays)
+        self._init_lr = learning_rate  # to print lr_mult setup
         self._init_notified = False
-        _check_args(total_iterations, use_cosine_annealing, self.weight_decays)
 
     @interfaces.legacy_get_updates_support
     @K.symbolic
     def get_updates(self, loss, params):
         grads = self.get_gradients(loss, params)
         self.updates = [K.update_add(self.iterations, 1)]
-        self.updates.append(K.update_add(self.t_cur, 1))
 
         lr = self.learning_rate
         if self.initial_decay > 0:
@@ -139,12 +139,6 @@ class AdamW(Optimizer):
                      for i in range(len(params))]
         self.weights = [self.iterations] + ms + vs + vhats
 
-        total_iterations = self.total_iterations
-        # Cosine annealing
-        if self.use_cosine_annealing and total_iterations != 0:
-            self.eta_t = _compute_eta_t(self)
-        self.lr_t = lr_t * self.eta_t  # for external tracking
-
         for p, g, m, v, vhat in zip(params, grads, ms, vs, vhats):
             # Learning rate multipliers
             if self.lr_multipliers is not None:
@@ -163,7 +157,7 @@ class AdamW(Optimizer):
             self.updates.append(K.update(v, v_t))
 
             # Weight decays
-            if p.name in self.weight_decays.keys() and total_iterations != 0:
+            if p.name in self.weight_decays.keys():
                 p_t = _apply_weight_decays(self, p, p_t)
             new_p = p_t
 
@@ -172,6 +166,10 @@ class AdamW(Optimizer):
                 new_p = p.constraint(new_p)
 
             self.updates.append(K.update(p, new_p))
+
+        # Cosine annealing
+        _update_t_cur_eta_t(self)
+        self.lr_t = lr_t * self.eta_t  # for external tracking
 
         self._init_notified = True
         return self.updates
@@ -182,7 +180,7 @@ class AdamW(Optimizer):
             'beta_1': float(K_eval(self.beta_1)),
             'beta_2': float(K_eval(self.beta_2)),
             'decay': float(K_eval(self.decay)),
-            'batch_size': int(K_eval(self.batch_size)),
+            'batch_size': int(self.batch_size),
             'total_iterations': int(self.total_iterations),
             'weight_decays': self.weight_decays,
             'lr_multipliers': self.lr_multipliers,
@@ -261,7 +259,9 @@ class NadamW(Optimizer):
                  use_cosine_annealing=False, lr_multipliers=None,
                  weight_decays=None, init_verbose=True,
                  eta_min=0, eta_max=1, t_cur=0, **kwargs):
-        weight_decays = _init_weight_decays(model, zero_penalties, weight_decays)
+        if total_iterations > 1:
+            weight_decays = _init_weight_decays(model, zero_penalties,
+                                                weight_decays)
 
         self.schedule_decay = kwargs.pop('schedule_decay', 0.004)
         self.epsilon = kwargs.pop('epsilon', K.epsilon())
@@ -275,13 +275,12 @@ class NadamW(Optimizer):
             self.learning_rate = K.variable(learning_rate, name='learning_rate')
             self.beta_1 = K.variable(beta_1, name='beta_1')
             self.beta_2 = K.variable(beta_2, name='beta_2')
-            self.batch_size = K.variable(batch_size, dtype='int64',
-                                         name='batch_size')
             self.eta_min = K.constant(eta_min, name='eta_min')
             self.eta_max = K.constant(eta_max, name='eta_max')
             self.eta_t = K.variable(eta_t, dtype='float32', name='eta_t')
             self.t_cur = K.variable(t_cur, dtype='int64', name='t_cur')
 
+        self.batch_size = batch_size
         self.total_iterations = total_iterations
         self.total_iterations_wd = total_iterations_wd or total_iterations
         self.lr_multipliers = lr_multipliers
@@ -289,15 +288,15 @@ class NadamW(Optimizer):
         self.use_cosine_annealing = use_cosine_annealing
         self.init_verbose = init_verbose
 
+        _check_args(self, total_iterations, use_cosine_annealing, weight_decays)
+        self._init_lr = learning_rate  # to print lr_mult setup
         self._init_notified = False
-        _check_args(total_iterations, use_cosine_annealing, self.weight_decays)
 
     @interfaces.legacy_get_updates_support
     @K.symbolic
     def get_updates(self, loss, params):
         grads = self.get_gradients(loss, params)
         self.updates = [K.update_add(self.iterations, 1)]
-        self.updates.append(K.update_add(self.t_cur, 1))
 
         t = K.cast(self.iterations, K.floatx()) + 1
 
@@ -317,12 +316,6 @@ class NadamW(Optimizer):
               for (i, shape) in enumerate(shapes)]
 
         self.weights = [self.iterations, self.m_schedule] + ms + vs
-
-        total_iterations = self.total_iterations
-        # Cosine annealing
-        if self.use_cosine_annealing and total_iterations != 0:
-            self.eta_t = _compute_eta_t(self)
-        self.lr_t = self.learning_rate * self.eta_t  # for external tracking
 
         for p, g, m, v in zip(params, grads, ms, vs):
             # Learning rate multipliers
@@ -345,15 +338,18 @@ class NadamW(Optimizer):
                     K.sqrt(v_t_prime) + self.epsilon)
 
             # Weight decays
-            if p.name in self.weight_decays.keys() and total_iterations != 0:
+            if p.name in self.weight_decays.keys():
                 p_t = _apply_weight_decays(self, p, p_t)
             new_p = p_t
 
             # Apply constraints.
             if getattr(p, 'constraint', None) is not None:
                 new_p = p.constraint(new_p)
-
             self.updates.append(K.update(p, new_p))
+
+        # Cosine annealing
+        _update_t_cur_eta_t(self)
+        self.lr_t = lr_t * self.eta_t  # for external tracking
 
         self._init_notified = True
         return self.updates
@@ -374,7 +370,7 @@ class NadamW(Optimizer):
             'beta_2': float(K_eval(self.beta_2)),
             'epsilon': self.epsilon,
             'schedule_decay': self.schedule_decay,
-            'batch_size': int(K_eval(self.batch_size)),
+            'batch_size': int(self.batch_size),
             'total_iterations': int(self.total_iterations),
             'weight_decays': self.weight_decays,
             'lr_multipliers': self.lr_multipliers,
@@ -448,7 +444,9 @@ class SGDW(Optimizer):
                  use_cosine_annealing=False, lr_multipliers=None,
                  weight_decays=None, init_verbose=True,
                  eta_min=0, eta_max=1, t_cur=0, **kwargs):
-        weight_decays = _init_weight_decays(model, zero_penalties, weight_decays)
+        if total_iterations > 1:
+            weight_decays = _init_weight_decays(model, zero_penalties,
+                                                weight_decays)
 
         self.initial_decay = kwargs.pop('decay', 0.0)
         learning_rate = kwargs.pop('lr', learning_rate)
@@ -460,13 +458,12 @@ class SGDW(Optimizer):
             self.learning_rate = K.variable(learning_rate, name='learning_rate')
             self.momentum = K.variable(momentum, name='momentum')
             self.decay = K.variable(self.initial_decay, name='decay')
-            self.batch_size = K.variable(batch_size, dtype='int64',
-                                         name='batch_size')
             self.eta_min = K.constant(eta_min, name='eta_min')
             self.eta_max = K.constant(eta_max, name='eta_max')
             self.eta_t = K.variable(eta_t, dtype='float32', name='eta_t')
             self.t_cur = K.variable(t_cur, dtype='int64', name='t_cur')
 
+        self.batch_size = batch_size
         self.total_iterations = total_iterations
         self.total_iterations_wd = total_iterations_wd or total_iterations
         self.nesterov = nesterov
@@ -475,15 +472,15 @@ class SGDW(Optimizer):
         self.init_verbose = init_verbose
         self.use_cosine_annealing = use_cosine_annealing
 
+        _check_args(self, total_iterations, use_cosine_annealing, weight_decays)
+        self._init_lr = learning_rate  # to print lr_mult setup
         self._init_notified = False
-        _check_args(total_iterations, use_cosine_annealing, self.weight_decays)
 
     @interfaces.legacy_get_updates_support
     @K.symbolic
     def get_updates(self, loss, params):
         grads = self.get_gradients(loss, params)
         self.updates = [K.update_add(self.iterations, 1)]
-        self.updates.append(K.update_add(self.t_cur, 1))
 
         lr = self.learning_rate
         if self.initial_decay > 0:
@@ -494,12 +491,6 @@ class SGDW(Optimizer):
         moments = [K.zeros(shape, name='moment_' + str(i))
                    for (i, shape) in enumerate(shapes)]
         self.weights = [self.iterations] + moments
-
-        total_iterations = self.total_iterations
-        # Cosine annealing
-        if self.use_cosine_annealing and total_iterations != 0:
-            self.eta_t = _compute_eta_t(self)
-        self.lr_t = lr * self.eta_t  # for external tracking
 
         for p, g, m in zip(params, grads, moments):
             # Learning rate multipliers
@@ -516,15 +507,18 @@ class SGDW(Optimizer):
                 p_t = p + v
 
             # Weight decays
-            if p.name in self.weight_decays.keys() and total_iterations != 0:
+            if p.name in self.weight_decays.keys():
                 p_t = _apply_weight_decays(self, p, p_t)
             new_p = p_t
 
             # Apply constraints.
             if getattr(p, 'constraint', None) is not None:
                 new_p = p.constraint(new_p)
-
             self.updates.append(K.update(p, new_p))
+
+        # Cosine annealing
+        _update_t_cur_eta_t(self)
+        self.lr_t = lr_t * self.eta_t  # for external tracking
 
         self._init_notified = True
         return self.updates
@@ -535,7 +529,7 @@ class SGDW(Optimizer):
             'momentum': float(K_eval(self.momentum)),
             'decay': float(K_eval(self.decay)),
             'nesterov': self.nesterov,
-            'batch_size': int(K_eval(self.batch_size)),
+            'batch_size': int(self.batch_size),
             'total_iterations': int(self.total_iterations),
             'weight_decays': self.weight_decays,
             'lr_multipliers': self.lr_multipliers,
