@@ -88,11 +88,16 @@ def test_misc():  # tests of non-main features to improve coverage
         batch_size, timesteps = 16, 8
         batch_shape = (batch_size, timesteps)
         embed_input_dim = 5
-        total_iterations = 0
-        l1_reg = 1e-4 if optimizer_name == 'SGDW' else 0  # arbitrary
-        l2_reg = 1e-4 if optimizer_name != 'SGDW' else 0  # arbitrary
 
-        model = _make_model(batch_shape, total_iterations,
+        # arbitrarily select SGDW for coverage testing
+        l1_reg = 1e-4 if optimizer_name == 'SGDW' else 0
+        l2_reg = 1e-4 if optimizer_name != 'SGDW' else 0
+        if optimizer_name == 'SGDW':
+            optimizer_kw['zero_penalties'] = False
+            optimizer_kw['weight_decays'] = {}
+            optimizer_kw['total_iterations'] = 2
+
+        model = _make_model(batch_shape,
                             embed_input_dim=embed_input_dim,
                             dense_constraint=1,
                             l1_reg=l1_reg, l2_reg=l2_reg,
@@ -110,8 +115,13 @@ def test_misc():  # tests of non-main features to improve coverage
         # util test
         dc = {'lstm': 0, 'dense': 0}
         fill_dict_in_order(dc, [1e-4, 2e-4])
-        AdamW(model=model, zero_penalties=True)
+        AdamW(model=model, zero_penalties=False)
         AdamW(model=model, weight_decays={'a': 0})
+
+        opt = AdamW(weight_decays={model.layers[1].weights[0].name: (0, 0)},
+                    total_iterations=2)
+        model.compile(opt, 'mse')
+        model.train_on_batch(X[0], Y[0])
 
         # cleanup
         del model, optimizer
@@ -156,16 +166,14 @@ def _test_control(optimizer_name, amsgrad=False, nesterov=False):
     batch_size, timesteps = 16, 32
     batch_shape = (batch_size, timesteps)
     embed_input_dim = 5
-    total_iterations = 0
 
     model_kw = dict(batch_shape=batch_shape, dense_constraint=1,
-                    total_iterations=total_iterations,
                     embed_input_dim=embed_input_dim, l1_reg=0, l2_reg=0,
                     bidirectional=False, sparse=True)
     loss_name = 'sparse_categorical_crossentropy'
     reset_seeds(verbose=0)
     X, Y = _make_data(num_batches, *batch_shape,
-                           embed_input_dim=embed_input_dim, sparse=True)
+                      embed_input_dim=embed_input_dim, sparse=True)
 
     reset_seeds(reset_graph_with_backend=K, verbose=0)
     model_custom = _make_model(**model_kw)
@@ -188,8 +196,8 @@ def _test_control(optimizer_name, amsgrad=False, nesterov=False):
     loss_control = []  # for introspection
     t0 = time()
     for batch_num in range(num_batches):
-        loss_control += [model_control.train_on_batch(
-                X[batch_num], Y[batch_num])]
+        loss_control += [model_control.train_on_batch(X[batch_num],
+                                                      Y[batch_num])]
     print("model_control -- %s batches -- time: %.2f sec" % (num_batches,
                                                              time() - t0))
 
@@ -240,9 +248,8 @@ def _make_data(num_batches, batch_size, timesteps, num_channels=None,
     return X, Y
 
 
-def _make_model(batch_shape, total_iterations, l1_reg=None, l2_reg=None,
-                bidirectional=True, dense_constraint=None,
-                embed_input_dim=None, sparse=False):
+def _make_model(batch_shape, l1_reg=None, l2_reg=None, bidirectional=True,
+                dense_constraint=None, embed_input_dim=None, sparse=False):
     def _make_reg(l1_reg, l2_reg):
         if l1_reg is not None and l2_reg is None:
             return l1(l1_reg)
@@ -279,10 +286,11 @@ def _make_model(batch_shape, total_iterations, l1_reg=None, l2_reg=None,
 
 
 def _make_optimizer(optimizer_name, model, total_iterations, decay=0,
-                    amsgrad=False, nesterov=False, control_mode=False):
-    optimizer_dict = {'AdamW': AdamW, 'NadamW': NadamW, 'SGDW': SGDW,
-                      'Adam': Adam, 'Nadam': Nadam, 'SGD': SGD}
-    optimizer = optimizer_dict[optimizer_name]
+                    amsgrad=False, nesterov=False, control_mode=False,
+                    zero_penalties=True, weight_decays=None):
+    optimizers_dict = {'AdamW': AdamW, 'NadamW': NadamW, 'SGDW': SGDW,
+                       'Adam': Adam, 'Nadam': Nadam, 'SGD': SGD}
+    optimizer = optimizers_dict[optimizer_name]
 
     optimizer_kw = {}
     if 'Adam' in optimizer_name:
@@ -299,10 +307,11 @@ def _make_optimizer(optimizer_name, model, total_iterations, decay=0,
         lr_multipliers = None
         use_cosine_annealing = False
 
-    if not any([optimizer_name == name for name in ('Adam', 'Nadam', 'SGD')]):
+    if optimizer_name in ('AdamW', 'NadamW', 'SGDW'):
         return optimizer(lr=1e-4, model=model, lr_multipliers=lr_multipliers,
                          use_cosine_annealing=use_cosine_annealing, t_cur=0,
-                         total_iterations=total_iterations, **optimizer_kw)
+                         total_iterations=total_iterations,
+                         weight_decays=weight_decays, **optimizer_kw)
     else:
         return optimizer(lr=1e-4, **optimizer_kw)
 
