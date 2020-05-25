@@ -114,7 +114,7 @@ def test_misc():  # tests of non-main features to improve coverage
         # util test
         dc = {'lstm': 0, 'dense': 0}
         fill_dict_in_order(dc, [1e-4, 2e-4])
-        AdamW(model=model, zero_penalties=False)
+        AdamW(model=model, zero_penalties=False, total_iterations=2)
         AdamW(model=model, weight_decays={'a': 0})
 
         opt = AdamW(weight_decays={model.layers[1].weights[0].name: (0, 0)},
@@ -126,7 +126,7 @@ def test_misc():  # tests of non-main features to improve coverage
         del model, optimizer
         reset_seeds(reset_graph_with_backend=K)
         try:
-            K_eval('x')  # for coverage
+            K_eval('x', K)  # for coverage
         except:
             pass
 
@@ -255,7 +255,7 @@ def _make_model(batch_shape, l1_reg=None, l2_reg=None, bidirectional=True,
         elif l1_reg is None and l2_reg is not None:
             return l2(l2_reg)
         elif l1_reg is not None and l2_reg is not None:
-            return l1_l2(l1_reg + l2_reg)
+            return l1_l2(l1_reg, l2_reg)
         else:
             return None
     reg = _make_reg(l1_reg, l2_reg)

@@ -12,7 +12,7 @@ from keras_adamw.utils import K_eval
 ipt   = Input(shape=(120,4))
 x     = LSTM(60, activation='relu', name='lstm_1',
              kernel_regularizer=l1(1e-4), recurrent_regularizer=l2(2e-4))(ipt)
-out   = Dense(1, activation='sigmoid', kernel_regularizer=l1_l2(1e-4))(x)
+out   = Dense(1, activation='sigmoid', kernel_regularizer=l1_l2(1e-4, 2e-4))(x)
 model = Model(ipt, out)
 
 lr_multipliers = {'lstm_1': 0.5}
