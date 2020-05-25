@@ -5,7 +5,6 @@ python:
   - "3.6"
 env:
   global:
-    - TF_PYTHON="0"
     - TF_EAGER="0"
     - TF_KERAS="0"
   matrix:
