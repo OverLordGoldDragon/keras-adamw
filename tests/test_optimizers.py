@@ -119,7 +119,7 @@ def test_misc():  # tests of non-main features to improve coverage
 
         opt = AdamW(weight_decays={model.layers[1].weights[0].name: (0, 0)},
                     total_iterations=2)
-        model.compile(opt, 'mse')
+        model.compile(opt, loss='sparse_categorical_crossentropy')
         model.train_on_batch(X[0], Y[0])
 
         # cleanup
