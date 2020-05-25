@@ -89,10 +89,13 @@ def test_misc():  # tests of non-main features to improve coverage
         batch_shape = (batch_size, timesteps)
         embed_input_dim = 5
         total_iterations = 0
+        l1_reg = 1e-4 if optimizer_name == 'SGDW' else 0  # arbitrary
+        l2_reg = 1e-4 if optimizer_name != 'SGDW' else 0  # arbitrary
 
         model = _make_model(batch_shape, total_iterations,
                             embed_input_dim=embed_input_dim,
-                            dense_constraint=1, l2_reg=1e-4,
+                            dense_constraint=1,
+                            l1_reg=l1_reg, l2_reg=l2_reg,
                             bidirectional=False, sparse=True)
         optimizer = _make_optimizer(optimizer_name, model, **optimizer_kw)
         model.compile(optimizer, loss='sparse_categorical_crossentropy')
@@ -113,6 +116,10 @@ def test_misc():  # tests of non-main features to improve coverage
         # cleanup
         del model, optimizer
         reset_seeds(reset_graph_with_backend=K)
+        try:
+            K_eval('x')  # for coverage
+        except:
+            pass
 
         cprint("\n<< {} MISC TEST PASSED >>\n".format(optimizer_name), 'green')
     cprint("\n<< ALL MISC TESTS PASSED >>\n", 'green')
@@ -153,7 +160,7 @@ def _test_control(optimizer_name, amsgrad=False, nesterov=False):
 
     model_kw = dict(batch_shape=batch_shape, dense_constraint=1,
                     total_iterations=total_iterations,
-                    embed_input_dim=embed_input_dim, l2_reg=0,
+                    embed_input_dim=embed_input_dim, l1_reg=0, l2_reg=0,
                     bidirectional=False, sparse=True)
     loss_name = 'sparse_categorical_crossentropy'
     reset_seeds(verbose=0)
@@ -175,9 +182,8 @@ def _test_control(optimizer_name, amsgrad=False, nesterov=False):
 
     reset_seeds(reset_graph_with_backend=K, verbose=0)
     model_control = _make_model(**model_kw)
-    optimizer_control = _make_optimizer(optimizer_name[:-1],
-                                             model_control,
-                                             **optimizer_kw)
+    optimizer_control = _make_optimizer(optimizer_name[:-1], model_control,
+                                        **optimizer_kw)
     model_control.compile(optimizer_control, loss=loss_name)
     loss_control = []  # for introspection
     t0 = time()
@@ -234,15 +240,15 @@ def _make_data(num_batches, batch_size, timesteps, num_channels=None,
     return X, Y
 
 
-def _make_model(batch_shape, total_iterations, l1_reg=0, l2_reg=0,
+def _make_model(batch_shape, total_iterations, l1_reg=None, l2_reg=None,
                 bidirectional=True, dense_constraint=None,
                 embed_input_dim=None, sparse=False):
     def _make_reg(l1_reg, l2_reg):
-        if l1_reg and not l2_reg:
+        if l1_reg is not None and l2_reg is None:
             return l1(l1_reg)
-        elif not l1_reg and l2_reg:
+        elif l1_reg is None and l2_reg is not None:
             return l2(l2_reg)
-        elif l1_reg and l2_reg:
+        elif l1_reg is not None and l2_reg is not None:
             return l1_l2(l1_reg + l2_reg)
         else:
             return None
