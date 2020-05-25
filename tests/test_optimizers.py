@@ -37,8 +37,7 @@ def test_main():  # Save/Load, Warm Restarts (w/ cosine annealing)
         batch_shape = (batch_size, timesteps, num_channels)
         total_iterations = num_batches  # due to warm restarts
 
-        model = _make_model(batch_shape, total_iterations,
-                            l1_reg=1e-4, l2_reg=1e-4)
+        model = _make_model(batch_shape, l1_reg=1e-4, l2_reg=1e-4)
         optimizer = _make_optimizer(optimizer_name, model, total_iterations)
         model.compile(optimizer, loss='binary_crossentropy')
         assert _valid_weight_decays(model)
