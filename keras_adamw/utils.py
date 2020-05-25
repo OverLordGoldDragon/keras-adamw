@@ -2,20 +2,21 @@ import random
 import numpy as np
 import tensorflow as tf
 from termcolor import colored
-from tensorflow.python.ops import math_ops
+from tensorflow.python import ops
+from tensorflow.python.ops import math_ops, state_ops
 
 
 WARN = colored('WARNING:', 'red')
 
 
-def _apply_weight_decays(cls, var, var_t):
-    l1, l2 = cls.weight_decays[var.name]
+def _apply_weight_decays(self, var, var_t):
+    l1, l2 = self.weight_decays[var.name]
     if l1 == 0 and l2 == 0:
-        if cls.init_verbose and not cls._init_notified:
+        if self.init_verbose and not self._init_notified:
             print("Both penalties are 0 for %s, will skip" % var.name)
         return var_t
 
-    norm = math_ops.cast(math_ops.sqrt(cls.batch_size / cls.total_iterations_wd),
+    norm = math_ops.cast(math_ops.sqrt(self.batch_size / self.total_iterations_wd),
                          'float32')
     l1_normalized = l1 * norm
     l2_normalized = l2 * norm
@@ -26,35 +27,35 @@ def _apply_weight_decays(cls, var, var_t):
         decay = l1_normalized * math_ops.sign(var)
     else:
         decay = l2_normalized * var
-    var_t = var_t - cls.eta_t * decay
+    var_t = var_t - self.eta_t * decay
 
-    if cls.init_verbose and not cls._init_notified:
-        norm_print = (cls.batch_size / cls.total_iterations_wd) ** (1 / 2)
+    if self.init_verbose and not self._init_notified:
+        norm_print = (self.batch_size / self.total_iterations_wd) ** (1 / 2)
         l1n_print, l2n_print = l1 * norm_print, l2 * norm_print
         decays_str = "{}(L1), {}(L2)".format(l1n_print, l2n_print)
         print('{} weight decay set for {}'.format(decays_str, var.name))
     return var_t
 
 
-def _compute_eta_t(cls):
+def _compute_eta_t(self):
     PI = 3.141592653589793
-    t_frac = math_ops.cast(cls.t_cur / cls.total_iterations, 'float32')
-    eta_t = cls.eta_min + 0.5 * (cls.eta_max - cls.eta_min) * \
+    t_frac = math_ops.cast(self.t_cur / (self.total_iterations - 1), 'float32')
+    eta_t = self.eta_min + 0.5 * (self.eta_max - self.eta_min) * \
         (1 + math_ops.cos(PI * t_frac))
     return eta_t
 
 
-def _apply_lr_multiplier(cls, lr_t, var):
-    multiplier_name = [mult_name for mult_name in cls.lr_multipliers
+def _apply_lr_multiplier(self, lr_t, var):
+    multiplier_name = [mult_name for mult_name in self.lr_multipliers
                        if mult_name in var.name]
     if multiplier_name != []:
-        lr_mult = cls.lr_multipliers[multiplier_name[0]]
+        lr_mult = self.lr_multipliers[multiplier_name[0]]
     else:
         lr_mult = 1
     lr_t = lr_t * lr_mult
 
-    if cls.init_verbose and not cls._init_notified:
-        lr_print = cls._init_lr * lr_mult
+    if self.init_verbose and not self._init_notified:
+        lr_print = self._init_lr * lr_mult
         if lr_mult != 1:
             print('{} init learning rate set for {} -- {}'.format(
                '%.e' % round(lr_print, 5), var.name, lr_t))
@@ -62,6 +63,52 @@ def _apply_lr_multiplier(cls, lr_t, var):
             print('No change in learning rate {} -- {}'.format(var.name,
                                                                lr_print))
     return lr_t
+
+
+def _update_t_cur_eta_t(self):  # keras
+    self.updates.append(state_ops.assign_add(self.t_cur, 1))
+    # Cosine annealing
+    if self.use_cosine_annealing:
+        # ensure eta_t is updated AFTER t_cur
+        with ops.control_dependencies([self.updates[-1]]):
+            self.updates.append(state_ops.assign(self.eta_t,
+                                                 _compute_eta_t(self)))
+
+
+def _update_t_cur_eta_t_apply_lr_mult(self, lr_t=None, var=None):  # tf.keras
+    t_cur_update, eta_t_update = None, None  # in case not assigned
+
+    # update `t_cur` if iterating last `(grad, var)`
+    iteration_done = self._updates_processed == (self._updates_per_iter - 1)
+    if iteration_done:
+        t_cur_update = state_ops.assign_add(self.t_cur, 1,
+                                            use_locking=self._use_locking)
+        self._updates_processed = 0  # reset
+    else:
+        self._updates_processed += 1
+
+    # Cosine annealing
+    if self.use_cosine_annealing and iteration_done:
+        # ensure eta_t is updated AFTER t_cur
+        with ops.control_dependencies([t_cur_update]):
+            eta_t_update = state_ops.assign(self.eta_t, _compute_eta_t(self),
+                                            use_locking=self._use_locking)
+    # Learning rate multipliers
+    if self.lr_multipliers is not None:
+        lr_t = _apply_lr_multiplier(self, lr_t, var)
+
+    return iteration_done, t_cur_update, eta_t_update
+
+
+def _check_args(self, total_iterations, use_cosine_annealing, weight_decays):
+    if use_cosine_annealing and total_iterations > 1:
+        print('Using cosine annealing learning rates')
+    elif (use_cosine_annealing or weight_decays) and total_iterations <= 1:
+        print(WARN, "'total_iterations'==%s, must be >1" % total_iterations
+              + " to use cosine annealing and/or weight decays; "
+              "proceeding without either")
+        self.use_cosine_annealing = False
+        self.weight_decays = {}
 
 
 def _init_weight_decays(model, zero_penalties, weight_decays):
@@ -131,15 +178,6 @@ def _cell_penalties(rnn_cell, zero_penalties=False):
                 _lambda.l1 = np.array(0., dtype=_lambda.l1.dtype)
                 _lambda.l2 = np.array(0., dtype=_lambda.l2.dtype)
     return penalties
-
-
-def _check_args(total_iterations, use_cosine_annealing, weight_decays):
-    if use_cosine_annealing and total_iterations != 0:
-        print('Using cosine annealing learning rates')
-    elif (use_cosine_annealing or weight_decays != {}) and total_iterations == 0:
-        print(WARN, "'total_iterations'==0, must be !=0 to use "
-              "cosine annealing and/or weight decays; "
-              "proceeding without either")
 
 
 def fill_dict_in_order(_dict, values_list):
