@@ -665,23 +665,25 @@ class SGDW(OptimizerV2):
     def _resource_apply_dense(self, grad, var):
         var_dtype = var.dtype.base_dtype
         lr_t = self._decayed_lr(var_dtype)
-        momentum = array_ops.identity(self._get_hyper('momentum', var_dtype))
-        if K.eval(momentum) != 0:
-            m = self.get_slot(var, 'momentum')
-        else:
-            m = K.zeros(K.int_shape(var))
 
         # Learning rate multipliers
         # Cosine annealing
         (iteration_done, t_cur_update, eta_t_update
          ) = _update_t_cur_eta_t_apply_lr_mult(self, lr_t, var)
 
-        v = momentum * m - self.eta_t * lr_t * grad  # velocity
-        m = state_ops.assign(m, v, use_locking=self._use_locking)
+        if self._momentum:
+            momentum = array_ops.identity(self._get_hyper('momentum', var_dtype))
+            m = self.get_slot(var, 'momentum')
+            v = momentum * m - self.eta_t * lr_t * grad  # velocity
+            m = state_ops.assign(m, v, use_locking=self._use_locking)
 
-        if self.nesterov:
-            var_t = math_ops.sub(var, -momentum * v + self.eta_t*lr_t * grad)
+            if self.nesterov:
+                var_t = math_ops.sub(
+                    var, -momentum * v + self.eta_t * lr_t * grad)
+            else:
+                var_t = var + v
         else:
+            v = - self.eta_t * lr_t * grad
             var_t = var + v
 
         # Weight decays
@@ -692,7 +694,9 @@ class SGDW(OptimizerV2):
             self._init_notified = True
         var_update = state_ops.assign(var, var_t, use_locking=self._use_locking)
 
-        updates = [var_update, m]
+        updates = [var_update]
+        if self._momentum:
+            updates += [m]
         if iteration_done:
             updates += [t_cur_update]
         if self.use_cosine_annealing and iteration_done:
@@ -702,25 +706,26 @@ class SGDW(OptimizerV2):
     def _resource_apply_sparse(self, grad, var, indices):
         var_dtype = var.dtype.base_dtype
         lr_t = self._decayed_lr(var_dtype)
-        momentum = array_ops.identity(self._get_hyper('momentum', var_dtype))
-        if K.eval(momentum) != 0:
-            m = self.get_slot(var, 'momentum')
-        else:
-            m = K.zeros(K.int_shape(var))
 
         # Learning rate multipliers
         # Cosine annealing
         (iteration_done, t_cur_update, eta_t_update
          ) = _update_t_cur_eta_t_apply_lr_mult(self, lr_t, var)
 
-        v = momentum * m - self.eta_t * lr_t * grad
-        m = state_ops.assign(m, v, use_locking=self._use_locking)
+        if self._momentum:
+            momentum = array_ops.identity(self._get_hyper('momentum', var_dtype))
+            m = self.get_slot(var, 'momentum')
+            v = momentum * m - self.eta_t * lr_t * grad
+            m = state_ops.assign(m, v, use_locking=self._use_locking)
 
-        if self.nesterov:
-            var_t = self._resource_scatter_add(
-                var, indices, momentum * v - (self.eta_t * lr_t * grad))
+            if self.nesterov:
+                var_t = self._resource_scatter_add(
+                    var, indices, momentum * v - (self.eta_t * lr_t * grad))
+            else:
+                var_t = self._resource_scatter_add(var, indices, v)
         else:
-            var_t = self._resource_scatter_add(var, indices, v)
+            v = - self.eta_t * lr_t * grad
+            var_t = var + v
 
         # Weight decays
         if var.name in self.weight_decays.keys():
@@ -730,7 +735,9 @@ class SGDW(OptimizerV2):
             self._init_notified = True
         var_update = state_ops.assign(var, var_t, use_locking=self._use_locking)
 
-        updates = [var_update, m]
+        updates = [var_update]
+        if self._momentum:
+            updates += [m]
         if iteration_done:
             updates += [t_cur_update]
         if self.use_cosine_annealing and iteration_done:

@@ -1,4 +1,14 @@
 import os
+import sys
+import inspect
+# ensure `tests` directory path is on top of Python's module search
+filedir = os.path.dirname(inspect.stack()[0][1])
+if sys.path[0] != filedir:
+    if filedir in sys.path:
+        sys.path.pop(sys.path.index(filedir))  # avoid dudplication
+    sys.path.insert(0, filedir)
+
+import pytest
 import tempfile
 import numpy as np
 import tensorflow as tf
@@ -6,25 +16,15 @@ import tensorflow as tf
 from time import time
 from termcolor import cprint
 
-from . import K
-from . import Input, Dense, GRU, Bidirectional, Embedding
-from . import Model, load_model
-from . import l1, l2, l1_l2
-from . import maxnorm
-from . import Adam, Nadam, SGD
+from backend import K, TF_KERAS, TF_2
+from backend import Input, Dense, GRU, Bidirectional, Embedding
+from backend import Model, load_model
+from backend import l1, l2, l1_l2
+from backend import maxnorm
+from backend import Adam, Nadam, SGD
 from keras_adamw import AdamW, NadamW, SGDW
 from keras_adamw import get_weight_decays, fill_dict_in_order, reset_seeds
 from keras_adamw import K_eval
-
-
-print("TF version: %s" % tf.__version__)
-TF_KERAS = bool(os.environ["TF_KERAS"] == '1')
-TF_EAGER = bool(os.environ["TF_EAGER"] == '1')
-if TF_EAGER:
-    print("TF running eagerly")
-else:
-    tf.compat.v1.disable_eager_execution()
-    print("TF running in graph mode")
 
 
 def test_main():  # Save/Load, Warm Restarts (w/ cosine annealing)
@@ -92,9 +92,10 @@ def test_misc():  # tests of non-main features to improve coverage
         l1_reg = 1e-4 if optimizer_name == 'SGDW' else 0
         l2_reg = 1e-4 if optimizer_name != 'SGDW' else 0
         if optimizer_name == 'SGDW':
-            optimizer_kw['zero_penalties'] = False
-            optimizer_kw['weight_decays'] = {}
-            optimizer_kw['total_iterations'] = 2
+            optimizer_kw.update(dict(zero_penalties=False,
+                                      weight_decays={},
+                                      total_iterations=2,
+                                      momentum=0))
 
         model = _make_model(batch_shape,
                             embed_input_dim=embed_input_dim,
@@ -142,25 +143,29 @@ def test_control():  # tests losses against original optimizers'
         if optimizer_name == 'AdamW':
             for amsgrad in [True, False]:
                 _test_control(optimizer_name, amsgrad=amsgrad)
-                print("\n>> AdamW amsgrad={} {}".format(amsgrad, pass_txt))
+                print(">> AdamW amsgrad={} {}".format(amsgrad, pass_txt))
         elif optimizer_name == 'NadamW':
             _test_control(optimizer_name)
-
         elif optimizer_name == 'SGDW':
             for nesterov in [True, False]:
-                _test_control(optimizer_name, nesterov=nesterov)
-                print("\n>> SGDW nesterov={} {}".format(nesterov, pass_txt))
+                if not nesterov:
+                    for momentum in (0.9, 0):
+                        _test_control(optimizer_name, momentum=momentum)
+                        print(">> SGDW momentum={} {}".format(
+                            momentum, pass_txt))
+                else:
+                    _test_control(optimizer_name, nesterov=nesterov)
+                    print(">> SGDW nesterov={} {}".format(nesterov, pass_txt))
 
         o_name = optimizer_name
         cprint("\n<< {} {} >>\n".format(o_name, pass_txt.upper()), 'green')
-
     cprint("\n<< ALL CONTROL TESTS PASSED >>\n", 'green')
 
 
-def _test_control(optimizer_name, amsgrad=False, nesterov=False):
+def _test_control(optimizer_name, amsgrad=False, nesterov=False, momentum=.9):
     optimizer_kw = dict(total_iterations=0, decay=1e-3,
                         amsgrad=amsgrad, nesterov=nesterov,
-                        control_mode=True)
+                        momentum=momentum, control_mode=True)
     num_batches = 100
     batch_size, timesteps = 16, 32
     batch_shape = (batch_size, timesteps)
@@ -184,7 +189,7 @@ def _test_control(optimizer_name, amsgrad=False, nesterov=False):
     for batch_num in range(num_batches):
         loss_custom += [model_custom.train_on_batch(
                 X[batch_num], Y[batch_num])]
-    print("model_custom -- %s batches -- time: %.2f sec" % (num_batches,
+    print("\nmodel_custom -- %s batches -- time: %.2f sec" % (num_batches,
                                                             time() - t0))
 
     reset_seeds(reset_graph_with_backend=K, verbose=0)
@@ -220,7 +225,7 @@ def _test_save_load(model, X, optimizer_name, optimizer):
     modelpath = os.path.join(tempfile.gettempdir(), test_name)
     model.save(modelpath)
     del model
-    if tf.__version__[0] == '2' and not TF_KERAS:
+    if TF_2 and not TF_KERAS:
         tf.compat.v1.experimental.output_all_intermediates(True)  # bug fix
 
     model = load_model(modelpath, custom_objects={optimizer_name: optimizer})
@@ -286,16 +291,16 @@ def _make_model(batch_shape, l1_reg=None, l2_reg=None, bidirectional=True,
 
 def _make_optimizer(optimizer_name, model, total_iterations, decay=0,
                     amsgrad=False, nesterov=False, control_mode=False,
-                    zero_penalties=True, weight_decays=None):
-    optimizers_dict = {'AdamW': AdamW, 'NadamW': NadamW, 'SGDW': SGDW,
-                       'Adam': Adam, 'Nadam': Nadam, 'SGD': SGD}
-    optimizer = optimizers_dict[optimizer_name]
+                    zero_penalties=True, weight_decays=None, momentum=.9):
+    optimizer = {'AdamW': AdamW, 'NadamW': NadamW, 'SGDW': SGDW,
+                 'Adam': Adam, 'Nadam': Nadam, 'SGD': SGD
+                 }[optimizer_name]
 
     optimizer_kw = {}
     if 'Adam' in optimizer_name:
         optimizer_kw = {'amsgrad': amsgrad}
     elif 'SGD' in optimizer_name:
-        optimizer_kw = {'nesterov': nesterov, 'momentum': .9}
+        optimizer_kw = {'nesterov': nesterov, 'momentum': momentum}
     if 'Nadam' not in optimizer_name:
         optimizer_kw.update({'decay': decay})
 
@@ -331,3 +336,7 @@ def _valid_cosine_annealing(eta_history, total_iterations, num_epochs):
             eta_history_simul.append(value[0][0])
                     # 1 + np.cos(np.pi * iteration / total_iterations)))
     return np.allclose(eta_history, eta_history_simul, rtol=0, atol=2e-7)
+
+
+if __name__ == '__main__':
+    pytest.main([__file__, "-s"])

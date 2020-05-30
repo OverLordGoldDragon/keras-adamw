@@ -114,7 +114,7 @@ for epoch in range(3):
 
 ### Warm restarts
  - Set `t_cur = -1` to restart schedule multiplier (see _Example_). Can be done at compilation or during training. Non-`-1` is also valid, and will start `eta_t` at another point on the cosine curve. Details in A-2,3
- - `t_cur` should be set at `iter == total_iterations - 2`; explanation [here](https://github.com/OverLordGoldDragon/keras-adamw/blob/master/tests/test_optimizers.py#L53)
+ - `t_cur` should be set at `iter == total_iterations - 2`; explanation [here](https://github.com/OverLordGoldDragon/keras-adamw/blob/v1.31/tests/test_optimizers.py#L52)
  - Set `total_iterations` to the # of expected weight updates _for the given restart_ --_Authors_ (A-1,2)
  - `eta_min=0, eta_max=1` are tunable hyperparameters; e.g., an exponential schedule can be used for `eta_max`. If unsure, the defaults were shown to work well in the paper. --_Authors_
  - **[Save/load](https://keras.io/getting-started/faq/#how-can-i-save-a-keras-model) optimizer state**; WR relies on using the optimizer's update history for effective transitions --_Authors_ (A-2)

@@ -1,10 +1,34 @@
 import os
+import tensorflow as tf
 
+#### Environment configs ######################################################
+# for testing locally
+os.environ['TF_KERAS'] = os.environ.get("TF_KERAS", '1')
+os.environ['TF_EAGER'] = os.environ.get("TF_EAGER", '1')
 
-TF_KERAS = bool(os.environ.get("TF_KERAS", '0') == '1')
-TF_2 = bool(os.environ.get("TF_VERSION", '1')[0] == '2')
+TF_KERAS = bool(os.environ['TF_KERAS'] == '1')
+TF_EAGER = bool(os.environ['TF_EAGER'] == '1')
+TF_2 = bool(tf.__version__[0] == '2')
 
+if TF_2:
+    USING_GPU = bool(tf.config.list_logical_devices('GPU') != [])
+else:
+    USING_GPU = bool(tf.config.experimental.list_logical_devices('GPU') != [])
 
+if not TF_EAGER:
+    tf.compat.v1.disable_eager_execution()
+elif not TF_2:
+    raise Exception("deeptrain does not support TF1 in Eager execution")
+
+print(("{}\nTF version: {}\nTF uses {}\nTF executing in {} mode\n"
+       "TF_KERAS = {}\n{}\n").format("=" * 80,
+                                     tf.__version__,
+                                     "GPU"   if USING_GPU else "CPU",
+                                     "Eager" if TF_EAGER  else "Graph",
+                                     "1"     if TF_KERAS  else "0",
+                                     "=" * 80))
+
+#### Imports + Funcs ##########################################################
 if TF_KERAS:
     from tensorflow.keras import backend as K
     from tensorflow.keras.layers import Input, Dense, GRU, Bidirectional, Embedding
