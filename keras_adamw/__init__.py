@@ -28,15 +28,4 @@ else:
 from .utils import get_weight_decays, fill_dict_in_order
 from .utils import reset_seeds, K_eval
 
-
-def __getattr__(name):
-    if name == 'AdamW':
-        return AdamW
-    elif name == 'NadamW':
-        return NadamW
-    elif name == 'SGDW':
-        return SGDW
-    else:
-        raise AttributeError(f"'keras_adamw' has no attribute '{name}'")
-
 __version__ = '1.31'

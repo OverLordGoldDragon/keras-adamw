@@ -28,7 +28,7 @@ from keras_adamw import K_eval
 
 
 def test_main():  # Save/Load, Warm Restarts (w/ cosine annealing)
-    for optimizer_name in ['SGDW', 'NadamW', 'SGDW']:
+    for optimizer_name in ['AdamW', 'NadamW', 'SGDW']:
         cprint("<< TESTING {} OPTIMIZER >>".format(optimizer_name), 'blue')
         reset_seeds()
 
