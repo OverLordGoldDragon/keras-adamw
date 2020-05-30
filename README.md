@@ -16,7 +16,7 @@ Keras implementation of **AdamW**, **SGDW**, **NadamW**, and **Warm Restarts**, 
 <img src="https://user-images.githubusercontent.com/16495490/65381086-233f7d00-dcb7-11e9-8c83-d0aec7b3663a.png" width="850">
 
 ## Features
- - **Weight decay fix**: decoupling L2 penalty from gradient. _Why use?_
+ - **Weight decay fix**: decoupling L2 penalty from gradient. _Why use?_ 
    - Weight decay via L2 penalty yields _worse generalization_, due to decay not working properly
    - Weight decay via L2 penalty leads to a _hyperparameter coupling_ with `lr`, complicating search
  - **Warm restarts (WR)**: cosine annealing learning rate schedule. _Why use?_
