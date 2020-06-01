@@ -18,7 +18,7 @@ else:
 if not TF_EAGER:
     tf.compat.v1.disable_eager_execution()
 elif not TF_2:
-    raise Exception("deeptrain does not support TF1 in Eager execution")
+    raise Exception("keras-adamw does not support TF1 in Eager execution")
 
 print(("{}\nTF version: {}\nTF uses {}\nTF executing in {} mode\n"
        "TF_KERAS = {}\n{}\n").format("=" * 80,

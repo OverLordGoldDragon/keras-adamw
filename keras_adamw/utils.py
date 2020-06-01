@@ -16,8 +16,8 @@ def _apply_weight_decays(self, var, var_t):
             print("Both penalties are 0 for %s, will skip" % var.name)
         return var_t
 
-    norm = math_ops.cast(math_ops.sqrt(self.batch_size / self.total_iterations_wd),
-                         'float32')
+    norm = math_ops.cast(math_ops.sqrt(
+        self.batch_size / self.total_iterations_wd), 'float32')
     l1_normalized = l1 * norm
     l2_normalized = l2 * norm
 
@@ -105,10 +105,8 @@ def _check_args(self, total_iterations, use_cosine_annealing, weight_decays):
         print('Using cosine annealing learning rates')
     elif (use_cosine_annealing or weight_decays) and total_iterations <= 1:
         print(WARN, "'total_iterations'==%s, must be >1" % total_iterations
-              + " to use cosine annealing and/or weight decays; "
-              "proceeding without either")
+              + " to use cosine annealing; eta_t won't change.")
         self.use_cosine_annealing = False
-        self.weight_decays = {}
 
 
 def _init_weight_decays(model, zero_penalties, weight_decays):
