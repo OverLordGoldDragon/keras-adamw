@@ -45,7 +45,7 @@ Loss-based penalties (l1, l2, l1_l2) will be zeroed by default, but can be kept 
 `zero_penalties=False` (NOT recommended, see Use guidelines).
 ```
 ```python
-# 2. Use keras_adamw.utils_common.py
+# 2. Use keras_adamw.utils.py
 Dense(.., kernel_regularizer=l2(0)) # set weight decays in layers as usual, but to ZERO
 wd_dict = get_weight_decays(model)
 # print(wd_dict) to see returned matrix names, note their order
