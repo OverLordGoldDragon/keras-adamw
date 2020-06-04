@@ -148,10 +148,11 @@ class AdamW(Optimizer):
             v_t = (self.beta_2 * v) + (1. - self.beta_2) * K.square(g)
             if self.amsgrad:
                 vhat_t = K.maximum(vhat, v_t)
-                p_t = p - lr_t * m_t / (K.sqrt(vhat_t) + self.epsilon)
+                p_t = p - self.eta_t * lr_t * m_t / (
+                    K.sqrt(vhat_t) + self.epsilon)
                 self.updates.append(K.update(vhat, vhat_t))
             else:
-                p_t = p - lr_t * m_t / (K.sqrt(v_t) + self.epsilon)
+                p_t = p - self.eta_t * lr_t * m_t / (K.sqrt(v_t) + self.epsilon)
 
             self.updates.append(K.update(m, m_t))
             self.updates.append(K.update(v, v_t))
