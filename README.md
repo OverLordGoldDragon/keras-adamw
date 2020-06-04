@@ -104,7 +104,7 @@ for epoch in range(3):
 ```
 <img src="https://user-images.githubusercontent.com/16495490/65729113-2063d400-e08b-11e9-8b6a-3a2ea1c62fdd.png" width="450">
 
-(Full example + plot code: [example.py](https://github.com/OverLordGoldDragon/keras-adamw/blob/master/example.py))
+(Full example + plot code, and explanation of `lr_t` vs. `lr`: [example.py](https://github.com/OverLordGoldDragon/keras-adamw/blob/master/example.py))
 
 ## Use guidelines
 ### Weight decay
