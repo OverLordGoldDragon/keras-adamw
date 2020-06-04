@@ -102,7 +102,7 @@ for epoch in range(3):
 	    K.set_value(model.optimizer.t_cur, -1) # WARM RESTART: reset cosine annealing argument
     print("EPOCH {} COMPLETED\n".format(epoch + 1))
 ```
-<img src="https://user-images.githubusercontent.com/16495490/83707138-51d56c00-a62a-11ea-9eba-60284490992b.png" width="480">
+<img src="https://user-images.githubusercontent.com/16495490/83707138-51d56c00-a62a-11ea-9eba-60284490992b.png" width="470">
 
 (Full example + plot code, and explanation of `lr_t` vs. `lr`: [example.py](https://github.com/OverLordGoldDragon/keras-adamw/blob/master/example.py))
 
