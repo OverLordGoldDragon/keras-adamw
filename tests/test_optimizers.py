@@ -264,11 +264,9 @@ def test_updates():
             opt = Opt(lr=1e-2, use_cosine_annealing=True, total_iterations=25)
             model = _make_model(opt, batch_shape)
             K.set_value(opt.eta_t, 0)
-            if not TF_KERAS:
-                # `keras` implem. cannot guarantee that weights are updated
-                # before eta_t is; this ensures t_cur forces eta_t to 0
-                # regardless of update order
-                K.set_value(opt.t_cur, opt.total_iterations - 2)
+            # TF cannot guarantee that weights are updated before eta_t is;
+            # this ensures t_cur forces eta_t to 0 regardless of update order
+            K.set_value(opt.t_cur, opt.total_iterations - 2)
 
             W_pre  = model.get_weights()
             model.train_on_batch(x, y)
