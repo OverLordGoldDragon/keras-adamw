@@ -182,7 +182,7 @@ def _test_control(optimizer_name, amsgrad=False, nesterov=False, momentum=.9):
     reset_seeds(reset_graph_with_backend=K, verbose=0)
     model_custom = _make_model(**model_kw)
     optimizer_custom = _make_optimizer(optimizer_name, model_custom,
-                                       **optimizer_kw)
+                                        **optimizer_kw)
     model_custom.compile(optimizer_custom, loss=loss_name)
     loss_custom = []  # for introspection
     t0 = time()
@@ -190,7 +190,7 @@ def _test_control(optimizer_name, amsgrad=False, nesterov=False, momentum=.9):
         loss_custom += [model_custom.train_on_batch(
                 X[batch_num], Y[batch_num])]
     print("\nmodel_custom -- %s batches -- time: %.2f sec" % (num_batches,
-                                                            time() - t0))
+                                                              time() - t0))
 
     reset_seeds(reset_graph_with_backend=K, verbose=0)
     model_control = _make_model(**model_kw)
@@ -203,10 +203,10 @@ def _test_control(optimizer_name, amsgrad=False, nesterov=False, momentum=.9):
         loss_control += [model_control.train_on_batch(X[batch_num],
                                                       Y[batch_num])]
     print("model_control -- %s batches -- time: %.2f sec" % (num_batches,
-                                                             time() - t0))
+                                                              time() - t0))
 
     loss_diff = np.abs(np.array(loss_custom) -
-                       np.array(loss_control))
+                        np.array(loss_control))
     print("%s max loss diff: %e" % (optimizer_name, np.max(loss_diff)))
 
     assert np.allclose(loss_custom, loss_control, rtol=0, atol=1e-3)
@@ -234,11 +234,53 @@ def _test_save_load(model, X, optimizer_name, optimizer):
     loaded_optim_weights = K.batch_get_value(model.optimizer.weights)
 
     assert np.allclose(saved_model_preds, loaded_model_preds,
-                       rtol=0, atol=1e-8)
+                        rtol=0, atol=1e-8)
     for smw, lmw in zip(saved_model_weights, loaded_model_weights):
         assert np.allclose(smw, lmw, rtol=0, atol=1e-8)
     for sow, low in zip(saved_optim_weights, loaded_optim_weights):
         assert np.allclose(sow, low, rtol=0, atol=1e-8)
+
+
+def test_updates():
+    """Ensure weight updates are applied with same actual learning rate
+    (after applying eta_t) for every weight - and that update with eta_t=0
+    does not change weights
+    """
+    def _make_model(opt, batch_shape):
+        ipt = Input(batch_shape=batch_shape)
+        x   = Dense(batch_shape[-1])(ipt)
+        out = Dense(batch_shape[-1])(x)
+        model = Model(ipt, out)
+        model.compile(opt, 'mse')
+        return model
+
+    batch_shape = (16, 10, 8)
+    x = y = np.random.randn(*batch_shape)
+
+    for Opt in (AdamW, NadamW, SGDW):
+        # rerun several times to stress-test
+        # nondeterministic device order of operations
+        for j in range(5):
+            opt = Opt(lr=1e-2, use_cosine_annealing=True, total_iterations=25)
+            model = _make_model(opt, batch_shape)
+            K.set_value(opt.eta_t, 0)
+            # TF cannot guarantee that weights are updated before eta_t is;
+            # this ensures t_cur forces eta_t to 0 regardless of update order
+            K.set_value(opt.t_cur, opt.total_iterations - 2)
+
+            W_pre  = model.get_weights()
+            model.train_on_batch(x, y)
+            W_post = model.get_weights()
+
+            for i, (w_pre, w_post) in enumerate(zip(W_pre, W_post)):
+                absdiff = np.sum(np.abs(w_post - w_pre))
+                assert absdiff < 1e-8, (
+                    "absdiff = {:.4e} for weight idx = {}, {} optimizer".format(
+                        absdiff, i, Opt.__name__))
+            print("Nondeterministic-op stress test iter %s passed" % (j + 1))
+        cprint("\n<< %s UPDATE TEST PASSED >>\n" % Opt.__name__, 'green')
+
+    cprint("\n<< ALL UPDATES TESTS PASSED >>\n", 'green')
 
 
 def _make_data(num_batches, batch_size, timesteps, num_channels=None,

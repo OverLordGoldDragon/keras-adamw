@@ -60,8 +60,8 @@ def _apply_lr_multiplier(self, lr_t, var):
             print('{} init learning rate set for {} -- {}'.format(
                '%.e' % round(lr_print, 5), var.name, lr_t))
         else:
-            print('No change in learning rate {} -- {}'.format(var.name,
-                                                               lr_print))
+            print('No change in learning rate {} -- {}'.format(
+                var.name, lr_print))
     return lr_t
 
 
@@ -75,7 +75,7 @@ def _update_t_cur_eta_t(self):  # keras
                                                  _compute_eta_t(self)))
 
 
-def _update_t_cur_eta_t_apply_lr_mult(self, lr_t=None, var=None):  # tf.keras
+def _update_t_cur_eta_t_v2(self, lr_t=None, var=None):  # tf.keras
     t_cur_update, eta_t_update = None, None  # in case not assigned
 
     # update `t_cur` if iterating last `(grad, var)`
@@ -93,9 +93,7 @@ def _update_t_cur_eta_t_apply_lr_mult(self, lr_t=None, var=None):  # tf.keras
         with ops.control_dependencies([t_cur_update]):
             eta_t_update = state_ops.assign(self.eta_t, _compute_eta_t(self),
                                             use_locking=self._use_locking)
-    # Learning rate multipliers
-    if self.lr_multipliers is not None:
-        lr_t = _apply_lr_multiplier(self, lr_t, var)
+        self.lr_t = lr_t * self.eta_t  # for external tracking
 
     return iteration_done, t_cur_update, eta_t_update
 
