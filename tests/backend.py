@@ -4,22 +4,38 @@ import tensorflow as tf
 #### Environment configs ######################################################
 # for testing locally
 os.environ['TF_KERAS'] = os.environ.get("TF_KERAS", '1')
-os.environ['TF_EAGER'] = os.environ.get("TF_EAGER", '1')
+os.environ['TF_EAGER'] = os.environ.get("TF_EAGER", '0')
+os.environ['USE_GPU']  = os.environ.get("USE_GPU",  '0')
 
+
+#### Get flags #################################
 TF_KERAS = bool(os.environ['TF_KERAS'] == '1')
 TF_EAGER = bool(os.environ['TF_EAGER'] == '1')
 TF_2 = bool(tf.__version__[0] == '2')
+
+#### GPU/CPU config ############################
+if os.environ['USE_GPU'] == '0':
+    if TF_2:
+        tf.config.set_visible_devices([], 'GPU')
+    os.environ["CUDA_VISIBLE_DEVICES"] = '-1'
 
 if TF_2:
     USING_GPU = bool(tf.config.list_logical_devices('GPU') != [])
 else:
     USING_GPU = bool(tf.config.experimental.list_logical_devices('GPU') != [])
 
+if os.environ['USE_GPU'] == '1' and not USING_GPU:
+    raise Exception("requested to use GPU but TF failed to find it")
+elif os.environ['USE_GPU'] == '0' and USING_GPU:
+    raise Exception("requrested to use CPU, but failed to hide GPU from TF")
+
+#### Graph/Eager config ########################
 if not TF_EAGER:
     tf.compat.v1.disable_eager_execution()
 elif not TF_2:
-    raise Exception("deeptrain does not support TF1 in Eager execution")
+    raise Exception("keras-adamw does not support TF1 in Eager execution")
 
+#### Print configs #############################
 print(("{}\nTF version: {}\nTF uses {}\nTF executing in {} mode\n"
        "TF_KERAS = {}\n{}\n").format("=" * 80,
                                      tf.__version__,
