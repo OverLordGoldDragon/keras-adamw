@@ -5,7 +5,7 @@ import tensorflow as tf
 # for testing locally
 os.environ['TF_KERAS'] = os.environ.get("TF_KERAS", '1')
 os.environ['TF_EAGER'] = os.environ.get("TF_EAGER", '0')
-os.environ['USE_GPU']  = os.environ.get("USE_GPU",  '1')
+os.environ['USE_GPU']  = os.environ.get("USE_GPU",  '0')
 
 
 #### Get flags #################################
