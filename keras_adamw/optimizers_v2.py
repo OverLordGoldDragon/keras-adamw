@@ -6,7 +6,7 @@ from tensorflow.python.ops import array_ops, control_flow_ops, math_ops, state_o
 from tensorflow.python.util.tf_export import keras_export
 from tensorflow.python.keras import backend as K
 from .utils import _init_weight_decays, _apply_weight_decays, _check_args
-from .utils import _update_t_cur_eta_t_v2, _apply_lr_multiplier
+from .utils import _update_t_cur_eta_t_v2, _apply_lr_multiplier, _set_autorestart
 from .utils import K_eval as KE
 
 
@@ -62,6 +62,13 @@ class AdamW(OptimizerV2):
         use_cosine_annealing: bool. If True, multiplies lr each train iteration
                               as a function of eta_min, eta_max, total_iterations,
                               and t_cur (current); [2]-Appendix, 2
+        autorestart: bool / None. If True, will automatically do Warm Restarts
+                     by resetting `t_cur=0` after `total_iterations`. If None,
+                     will default to same as `use_cosine_annealing`. If True
+                     but `use_cosine_annealing` is False, will raise ValueError.
+                     Note: once optimizer is built (happens on first model fit),
+                     changing `autorestart` has no effect; optimizer needs to be
+                     re-built.
         eta_min, eta_max: int, int. Min & max values of cosine annealing
                           lr multiplier; [2]-Appendix, 2
         t_cur: int. Value to initialize t_cur to - used for 'warm restarts'.
@@ -91,8 +98,9 @@ class AdamW(OptimizerV2):
                  model=None, zero_penalties=True, batch_size=32,
                  total_iterations=0, total_iterations_wd=None,
                  use_cosine_annealing=False, lr_multipliers=None,
-                 weight_decays=None, init_verbose=True,
-                 eta_min=0, eta_max=1, t_cur=0, name="AdamW", **kwargs):
+                 weight_decays=None, autorestart=None,
+                 init_verbose=True, eta_min=0, eta_max=1, t_cur=0,
+                 name="AdamW", **kwargs):
         if total_iterations > 1:
             weight_decays = _init_weight_decays(model, zero_penalties,
                                                 weight_decays)
@@ -118,6 +126,7 @@ class AdamW(OptimizerV2):
         self.epsilon = epsilon or backend_config.epsilon()
         self.amsgrad = amsgrad
 
+        _set_autorestart(self, autorestart, use_cosine_annealing)
         _check_args(self, total_iterations, use_cosine_annealing, weight_decays)
         self._init_lr = kwargs.get('lr', learning_rate)  # to print lr_mult setup
         self._updates_processed = 0  # to track num calls to '_resource_apply_...'
@@ -271,6 +280,7 @@ class AdamW(OptimizerV2):
             'total_iterations': int(self.total_iterations),
             'weight_decays': self.weight_decays,
             'use_cosine_annealing': self.use_cosine_annealing,
+            'autorestart': self.autorestart,
             't_cur': int(K_eval(self.t_cur)),
             'eta_t': float(K_eval(self.eta_t)),
             'eta_min': float(K_eval(self.eta_min)),
@@ -321,6 +331,13 @@ class NadamW(OptimizerV2):
         use_cosine_annealing: bool. If True, multiplies lr each train iteration
                               as a function of eta_min, eta_max, total_iterations,
                               and t_cur (current); [3]-Appendix, 2
+        autorestart: bool / None. If True, will automatically do Warm Restarts
+                     by resetting `t_cur=0` after `total_iterations`. If None,
+                     will default to same as `use_cosine_annealing`. If True
+                     but `use_cosine_annealing` is False, will raise ValueError.
+                     Note: once optimizer is built (happens on first model fit),
+                     changing `autorestart` has no effect; optimizer needs to be
+                     re-built.
         eta_min, eta_max: int, int. Min & max values of cosine annealing
                           lr multiplier; [3]-Appendix, 2
         t_cur: int. Value to initialize t_cur to - used for 'warm restarts'.
@@ -351,7 +368,7 @@ class NadamW(OptimizerV2):
                  epsilon=1e-7, model=None, zero_penalties=True, batch_size=32,
                  total_iterations=0, total_iterations_wd=None,
                  use_cosine_annealing=False, lr_multipliers=None,
-                 weight_decays=None, init_verbose=True,
+                 weight_decays=None, autorestart=None, init_verbose=True,
                  eta_min=0, eta_max=1, t_cur=0, name="NadamW", **kwargs):
         if total_iterations > 1:
             weight_decays = _init_weight_decays(model, zero_penalties,
@@ -387,6 +404,7 @@ class NadamW(OptimizerV2):
         self.use_cosine_annealing = use_cosine_annealing
         self.epsilon = epsilon or backend_config.epsilon()
 
+        _set_autorestart(self, autorestart, use_cosine_annealing)
         _check_args(self, total_iterations, use_cosine_annealing, weight_decays)
         self._init_lr = kwargs.get('lr', learning_rate)  # to print lr_mult setup
         self._updates_processed = 0  # to track num calls to '_resource_apply_...'
@@ -557,6 +575,7 @@ class NadamW(OptimizerV2):
             'total_iterations': int(self.total_iterations),
             'weight_decays': self.weight_decays,
             'use_cosine_annealing': self.use_cosine_annealing,
+            'autorestart': self.autorestart,
             't_cur': int(K_eval(self.t_cur)),
             'eta_t': float(K_eval(self.eta_t)),
             'eta_min': float(K_eval(self.eta_min)),
@@ -601,6 +620,13 @@ class SGDW(OptimizerV2):
         use_cosine_annealing: bool. If True, multiplies lr each train iteration
                               as a function of eta_min, eta_max, total_iterations,
                               and t_cur (current); [2]-Appendix, 2
+        autorestart: bool / None. If True, will automatically do Warm Restarts
+                     by resetting `t_cur=0` after `total_iterations`. If None,
+                     will default to same as `use_cosine_annealing`. If True
+                     but `use_cosine_annealing` is False, will raise ValueError.
+                     Note: once optimizer is built (happens on first model fit),
+                     changing `autorestart` has no effect; optimizer needs to be
+                     re-built.
         eta_min, eta_max: int, int. Min & max values of cosine annealing
                           lr multiplier; [2]-Appendix, 2
         t_cur: int. Value to initialize t_cur to - used for 'warm restarts'.
@@ -630,7 +656,7 @@ class SGDW(OptimizerV2):
                  model=None, zero_penalties=True, batch_size=32,
                  total_iterations=0, total_iterations_wd=None,
                  use_cosine_annealing=False, lr_multipliers=None,
-                 weight_decays=None, init_verbose=True,
+                 weight_decays=None, autorestart=None, init_verbose=True,
                  eta_min=0, eta_max=1, t_cur=0, name="SGDW", **kwargs):
         if total_iterations > 1:
             weight_decays = _init_weight_decays(model, zero_penalties,
@@ -661,6 +687,7 @@ class SGDW(OptimizerV2):
         self.init_verbose = init_verbose
         self.use_cosine_annealing = use_cosine_annealing
 
+        _set_autorestart(self, autorestart, use_cosine_annealing)
         _check_args(self, total_iterations, use_cosine_annealing, weight_decays)
         self._init_lr = kwargs.get('lr', learning_rate)  # to print lr_mult setup
         self._updates_processed = 0  # to track num calls to '_resource_apply_...'
@@ -771,6 +798,7 @@ class SGDW(OptimizerV2):
             'total_iterations': int(self.total_iterations),
             'weight_decays': self.weight_decays,
             'use_cosine_annealing': self.use_cosine_annealing,
+            'autorestart': self.autorestart,
             't_cur': int(K_eval(self.t_cur)),
             'eta_t': float(K_eval(self.eta_t)),
             'eta_min': float(K_eval(self.eta_min)),

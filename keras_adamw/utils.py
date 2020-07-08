@@ -3,8 +3,8 @@ import numpy as np
 import tensorflow as tf
 from termcolor import colored
 from tensorflow.python import ops
-from tensorflow.python.ops import math_ops, state_ops
-
+from tensorflow.python.ops import math_ops, state_ops, control_flow_ops
+from . import TF_KERAS
 
 WARN = colored('WARNING:', 'red')
 
@@ -66,7 +66,7 @@ def _apply_lr_multiplier(self, lr_t, var):
 
 
 def _update_t_cur_eta_t(self):  # keras
-    self.updates.append(state_ops.assign_add(self.t_cur, 1))
+    self.updates.append(_update_t_cur(self))
     # Cosine annealing
     if self.use_cosine_annealing:
         # ensure eta_t is updated AFTER t_cur
@@ -79,10 +79,9 @@ def _update_t_cur_eta_t_v2(self, lr_t=None, var=None):  # tf.keras
     t_cur_update, eta_t_update = None, None  # in case not assigned
 
     # update `t_cur` if iterating last `(grad, var)`
-    iteration_done = self._updates_processed == (self._updates_per_iter - 1)
+    iteration_done = (self._updates_processed == (self._updates_per_iter - 1))
     if iteration_done:
-        t_cur_update = state_ops.assign_add(self.t_cur, 1,
-                                            use_locking=self._use_locking)
+        t_cur_update = _update_t_cur(self)
         self._updates_processed = 0  # reset
     else:
         self._updates_processed += 1
@@ -98,6 +97,27 @@ def _update_t_cur_eta_t_v2(self, lr_t=None, var=None):  # tf.keras
     return iteration_done, t_cur_update, eta_t_update
 
 
+def _update_t_cur(self):
+    kw = {'use_locking': self._use_locking} if TF_KERAS else {}
+    if self.autorestart:
+        return control_flow_ops.cond(
+            math_ops.equal(self.t_cur, self.total_iterations - 1),
+            lambda: state_ops.assign(self.t_cur, 0, **kw),
+            lambda: state_ops.assign_add(self.t_cur, 1, **kw),
+        )
+    return state_ops.assign_add(self.t_cur, 1, **kw)
+
+
+def _set_autorestart(self, autorestart, use_cosine_annealing):
+    if autorestart is None:
+        self.autorestart = bool(use_cosine_annealing)
+    elif autorestart and not use_cosine_annealing:
+        raise ValueError("`autorestart` can only be used with "
+                         "`use_cosine_annealing`")
+    else:
+        self.autorestart = autorestart
+
+
 def _check_args(self, total_iterations, use_cosine_annealing, weight_decays):
     if use_cosine_annealing and total_iterations > 1:
         print('Using cosine annealing learning rates')
@@ -106,6 +126,7 @@ def _check_args(self, total_iterations, use_cosine_annealing, weight_decays):
               + " to use cosine annealing and/or weight decays; "
               "proceeding without either")
         self.use_cosine_annealing = False
+        self.autorestart = False
         self.weight_decays = {}
 
 
