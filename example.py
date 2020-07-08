@@ -33,8 +33,10 @@ for epoch in range(3):
         eta_history.append(K_eval(model.optimizer.eta_t, K))
         lr_history.append(K_eval(model.optimizer.lr_t, K))
         print("Iter {} loss: {}".format(iteration + 1, "%.3f" % loss))
-        if iteration == (24 - 2):
-            K.set_value(model.optimizer.t_cur, -1)  # WARM RESTART
+
+        # MANUAL OPTION if autorestart=False is used
+        # if iteration == (24 - 2):
+        #     K.set_value(model.optimizer.t_cur, -1)  # WARM RESTART
     print("EPOCH {} COMPLETED\n".format(epoch + 1))
 
 # learning rate at iteration `t` (lr_t) is subject to scaling depending on

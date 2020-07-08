@@ -98,8 +98,6 @@ for epoch in range(3):
         y = np.random.randint(0, 2, (10, 1)) # dummy labels
         loss = model.train_on_batch(x, y)
         print("Iter {} loss: {}".format(iteration + 1, "%.3f" % loss))
-	if iteration == (24 - 2): 
-	    K.set_value(model.optimizer.t_cur, -1) # WARM RESTART: reset cosine annealing argument
     print("EPOCH {} COMPLETED\n".format(epoch + 1))
 ```
 <img src="https://user-images.githubusercontent.com/16495490/83707138-51d56c00-a62a-11ea-9eba-60284490992b.png" width="470">
@@ -113,8 +111,9 @@ for epoch in range(3):
  - `total_iterations_wd` --> set to normalize over _all epochs_ (or other interval `!= total_iterations`) instead of per-WR when using WR; may _sometimes_ yield better results --_My note_
 
 ### Warm restarts
- - Set `t_cur = -1` to restart schedule multiplier (see _Example_). Can be done at compilation or during training. Non-`-1` is also valid, and will start `eta_t` at another point on the cosine curve. Details in A-2,3
- - `t_cur` should be set at `iter == total_iterations - 2`; explanation [here](https://github.com/OverLordGoldDragon/keras-adamw/blob/v1.31/tests/test_optimizers.py#L52)
+ - Done automatically with `autorestart=True`, which is the default if `use_cosine_annealing=True`; internally sets `t_cur=0` after `total_iterations` iterations.
+ - Manually: set `t_cur = -1` to restart schedule multiplier (see _Example_). Can be done at compilation or during training. Non-`-1` is also valid, and will start `eta_t` at another point on the cosine curve. Details in A-2,3
+ - `t_cur` should be set at `iter == total_iterations - 2`; explanation [here](https://github.com/OverLordGoldDragon/keras-adamw/blob/v1.35/tests/test_optimizers.py#L52)
  - Set `total_iterations` to the # of expected weight updates _for the given restart_ --_Authors_ (A-1,2)
  - `eta_min=0, eta_max=1` are tunable hyperparameters; e.g., an exponential schedule can be used for `eta_max`. If unsure, the defaults were shown to work well in the paper. --_Authors_
  - **[Save/load](https://keras.io/getting-started/faq/#how-can-i-save-a-keras-model) optimizer state**; WR relies on using the optimizer's update history for effective transitions --_Authors_ (A-2)

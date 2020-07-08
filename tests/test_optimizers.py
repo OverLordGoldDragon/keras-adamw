@@ -16,7 +16,7 @@ import tensorflow as tf
 from time import time
 from termcolor import cprint
 
-from backend import K, TF_KERAS, TF_2
+from backend import K, TF_KERAS, TF_2, TF_EAGER
 from backend import Input, Dense, GRU, Bidirectional, Embedding
 from backend import Model, load_model
 from backend import l1, l2, l1_l2
@@ -49,6 +49,7 @@ def test_main():  # Save/Load, Warm Restarts (w/ cosine annealing)
         eta_history = []    # for stop-introspection
         t_cur_history = []  # for stop-introspection
 
+        # // Explanation for "manual option" when autorestart=False
         # eta_t is first applied as-is, and only updated AFTER iteration;
         # setting t_cur does not immediately change eta_t.
         # Thus, t_cur must be reset 1 iteration BEFORE epoch ends
@@ -60,8 +61,8 @@ def test_main():  # Save/Load, Warm Restarts (w/ cosine annealing)
                 t_cur_history += [K_eval(model.optimizer.t_cur, K)]
                 eta_history += [K_eval(model.optimizer.eta_t, K)]
                 model.train_on_batch(X[batch_num], Y[batch_num])
-                if batch_num == (num_batches - 2):
-                    K.set_value(model.optimizer.t_cur, -1)
+                # if batch_num == (num_batches - 2):  Manual Option
+                #     K.set_value(model.optimizer.t_cur, -1)
 
         assert _valid_cosine_annealing(eta_history, total_iterations, num_epochs)
         assert model.optimizer.get_config()  # ensure value evaluation won't error
@@ -225,7 +226,7 @@ def _test_save_load(model, X, optimizer_name, optimizer):
     modelpath = os.path.join(tempfile.gettempdir(), test_name)
     model.save(modelpath)
     del model
-    if TF_2 and not TF_KERAS:
+    if TF_2 and not TF_EAGER and not TF_KERAS:
         tf.compat.v1.experimental.output_all_intermediates(True)  # bug fix
 
     model = load_model(modelpath, custom_objects={optimizer_name: optimizer})
@@ -376,7 +377,6 @@ def _valid_cosine_annealing(eta_history, total_iterations, num_epochs):
                            dtype='float32')
             value = np.array([0.5 * (1 + np.cos(arg))], dtype='float32')
             eta_history_simul.append(value[0][0])
-                    # 1 + np.cos(np.pi * iteration / total_iterations)))
     return np.allclose(eta_history, eta_history_simul, rtol=0, atol=2e-7)
 
 
