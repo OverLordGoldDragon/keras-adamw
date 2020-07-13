@@ -107,7 +107,7 @@ for epoch in range(3):
 ## Use guidelines
 ### Weight decay
  - **Set L2 penalty to ZERO** if regularizing a weight via `weight_decays` - else the purpose of the 'fix' is largely defeated, and weights will be over-decayed --_My recommendation_
- - `lambda = lambda_norm * sqrt(batch_size/total_iterations)` --> _can be changed_; the intent is to scale λ to _decouple_ it from other hyperparams - including (but _not limited to_), train duration & batch size. --_Authors_ (Appendix, pg.1) (A-1)
+ - `lambda = lambda_norm * sqrt(1/total_iterations)` --> _can be changed_; the intent is to scale λ to _decouple_ it from other hyperparams - including (but _not limited to_), # of epochs & batch size. --_Authors_ (Appendix, pg.1) (A-1)
  - `total_iterations_wd` --> set to normalize over _all epochs_ (or other interval `!= total_iterations`) instead of per-WR when using WR; may _sometimes_ yield better results --_My note_
 
 ### Warm restarts

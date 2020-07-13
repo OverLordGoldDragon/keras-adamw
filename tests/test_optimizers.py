@@ -183,7 +183,7 @@ def _test_control(optimizer_name, amsgrad=False, nesterov=False, momentum=.9):
     reset_seeds(reset_graph_with_backend=K, verbose=0)
     model_custom = _make_model(**model_kw)
     optimizer_custom = _make_optimizer(optimizer_name, model_custom,
-                                        **optimizer_kw)
+                                       **optimizer_kw)
     model_custom.compile(optimizer_custom, loss=loss_name)
     loss_custom = []  # for introspection
     t0 = time()

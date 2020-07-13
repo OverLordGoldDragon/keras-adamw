@@ -46,7 +46,6 @@ class AdamW(OptimizerV2):
             extracts weight penalties from layers, and overrides `weight_decays`.
         zero_penalties: bool. If True and `model` is passed, will zero weight
             penalties (loss-based). (RECOMMENDED; see README "Use guidelines").
-        batch_size:       int >= 1. Train input batch size; used for normalization
         total_iterations: int >= 0. Total expected iterations / weight updates
                           throughout training, used for normalization; <1>
         lr_multipliers:   dict / None. Name-value pairs specifying per-layer lr
@@ -83,7 +82,7 @@ class AdamW(OptimizerV2):
     """
     def __init__(self, learning_rate=0.001, beta_1=0.9, beta_2=0.999,
                  epsilon=None, decay=0., amsgrad=False,
-                 model=None, zero_penalties=True, batch_size=32,
+                 model=None, zero_penalties=True,
                  total_iterations=0, total_iterations_wd=None,
                  use_cosine_annealing=False, lr_multipliers=None,
                  weight_decays=None, autorestart=None, init_verbose=True,
@@ -103,7 +102,6 @@ class AdamW(OptimizerV2):
         self.eta_max = K.constant(eta_max, name='eta_max')
         self.eta_t = K.variable(eta_t, dtype='float32', name='eta_t')
         self.t_cur = K.variable(t_cur, dtype='int64', name='t_cur')
-        self.batch_size = batch_size
         self.total_iterations = total_iterations
         self.total_iterations_wd = total_iterations_wd or total_iterations
         self.lr_multipliers = lr_multipliers
@@ -267,7 +265,6 @@ class AdamW(OptimizerV2):
             'beta_2': self._serialize_hyperparameter('beta_2'),
             'epsilon': self.epsilon,
             'amsgrad': self.amsgrad,
-            'batch_size': int(self.batch_size),
             'total_iterations': int(self.total_iterations),
             'weight_decays': self.weight_decays,
             'use_cosine_annealing': self.use_cosine_annealing,
@@ -311,7 +308,6 @@ class NadamW(OptimizerV2):
             extracts weight penalties from layers, and overrides `weight_decays`.
         zero_penalties: bool. If True and `model` is passed, will zero weight
             penalties (loss-based). (RECOMMENDED; see README "Use guidelines").
-        batch_size:       int >= 1. Train input batch size; used for normalization
         total_iterations: int >= 0. Total expected iterations / weight updates
                           throughout training, used for normalization; <1>
         lr_multipliers:   dict / None. Name-value pairs specifying per-layer lr
@@ -350,7 +346,7 @@ class NadamW(OptimizerV2):
     """
     def __init__(self, learning_rate=0.001, beta_1=0.9, beta_2=0.999,
                  epsilon=1e-7, model=None, zero_penalties=True,
-                 batch_size=32, total_iterations=0, total_iterations_wd=None,
+                 total_iterations=0, total_iterations_wd=None,
                  use_cosine_annealing=False, lr_multipliers=None,
                  weight_decays=None, autorestart=None, init_verbose=True,
                  eta_min=0, eta_max=1, t_cur=0, name="NadamW", **kwargs):
@@ -379,7 +375,6 @@ class NadamW(OptimizerV2):
         self.eta_max = K.constant(eta_max, name='eta_max')
         self.eta_t = K.variable(eta_t, dtype='float32', name='eta_t')
         self.t_cur = K.variable(t_cur, dtype='int64', name='t_cur')
-        self.batch_size = batch_size
         self.total_iterations = total_iterations
         self.total_iterations_wd = total_iterations_wd or total_iterations
         self.lr_multipliers = lr_multipliers
@@ -556,7 +551,6 @@ class NadamW(OptimizerV2):
             'beta_1': self._serialize_hyperparameter('beta_1'),
             'beta_2': self._serialize_hyperparameter('beta_2'),
             'epsilon': self.epsilon,
-            'batch_size': int(self.batch_size),
             'total_iterations': int(self.total_iterations),
             'weight_decays': self.weight_decays,
             'use_cosine_annealing': self.use_cosine_annealing,
@@ -594,7 +588,6 @@ class SGDW(OptimizerV2):
             extracts weight penalties from layers, and overrides `weight_decays`.
         zero_penalties: bool. If True and `model` is passed, will zero weight
             penalties (loss-based). (RECOMMENDED; see README "Use guidelines").
-        batch_size:       int >= 1. Train input batch size; used for normalization
         total_iterations: int >= 0. Total expected iterations / weight updates
                           throughout training, used for normalization; <1>
         lr_multipliers:   dict / None. Name-value pairs specifying per-layer lr
@@ -631,7 +624,7 @@ class SGDW(OptimizerV2):
          (https://arxiv.org/abs/1711.05101)
     """
     def __init__(self, learning_rate=0.01, momentum=0.0, nesterov=False,
-                 model=None, zero_penalties=True, batch_size=32,
+                 model=None, zero_penalties=True,
                  total_iterations=0, total_iterations_wd=None,
                  use_cosine_annealing=False, lr_multipliers=None,
                  weight_decays=None, autorestart=None, init_verbose=True,
@@ -657,7 +650,6 @@ class SGDW(OptimizerV2):
         self.eta_max = K.constant(eta_max, name='eta_max')
         self.eta_t = K.variable(eta_t, dtype='float32', name='eta_t')
         self.t_cur = K.variable(t_cur, dtype='int64', name='t_cur')
-        self.batch_size = batch_size
         self.total_iterations = total_iterations
         self.total_iterations_wd = total_iterations_wd or total_iterations
         self.lr_multipliers = lr_multipliers
@@ -773,7 +765,6 @@ class SGDW(OptimizerV2):
             "decay": self._serialize_hyperparameter("decay"),
             "momentum": self._serialize_hyperparameter("momentum"),
             "nesterov": self.nesterov,
-            'batch_size': int(self.batch_size),
             'total_iterations': int(self.total_iterations),
             'weight_decays': self.weight_decays,
             'use_cosine_annealing': self.use_cosine_annealing,
