@@ -16,7 +16,7 @@ def _apply_weight_decays(self, var, var_t):
             print("Both penalties are 0 for %s, will skip" % var.name)
         return var_t
 
-    norm = math_ops.cast(math_ops.sqrt(self.batch_size / self.total_iterations_wd),
+    norm = math_ops.cast(math_ops.sqrt(1 / self.total_iterations_wd),
                          'float32')
     l1_normalized = l1 * norm
     l2_normalized = l2 * norm
@@ -30,7 +30,7 @@ def _apply_weight_decays(self, var, var_t):
     var_t = var_t - self.eta_t * decay
 
     if self.init_verbose and not self._init_notified:
-        norm_print = (self.batch_size / self.total_iterations_wd) ** (1 / 2)
+        norm_print = (1 / self.total_iterations_wd) ** (1 / 2)
         l1n_print, l2n_print = l1 * norm_print, l2 * norm_print
         decays_str = "{}(L1), {}(L2)".format(l1n_print, l2n_print)
         print('{} weight decay set for {}'.format(decays_str, var.name))
