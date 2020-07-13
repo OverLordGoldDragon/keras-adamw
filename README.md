@@ -11,7 +11,7 @@
 ![](https://img.shields.io/badge/keras-tf.keras/eager-blue.svg)
 ![](https://img.shields.io/badge/keras-tf.keras/2.0-blue.svg)
 
-Keras implementation of **AdamW**, **SGDW**, **NadamW**, and **Warm Restarts**, based on paper [Decoupled Weight Decay Regularization](https://arxiv.org/abs/1711.05101) - plus **Learning Rate Multipliers**
+Keras/TF implementation of **AdamW**, **SGDW**, **NadamW**, and **Warm Restarts**, based on paper [Decoupled Weight Decay Regularization](https://arxiv.org/abs/1711.05101) - plus **Learning Rate Multipliers**
 
 <img src="https://user-images.githubusercontent.com/16495490/65381086-233f7d00-dcb7-11e9-8c83-d0aec7b3663a.png" width="850">
 
