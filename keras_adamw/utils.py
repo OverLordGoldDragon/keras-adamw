@@ -2,7 +2,6 @@ import random
 import numpy as np
 import tensorflow as tf
 from termcolor import colored
-from tensorflow.python import ops
 from tensorflow.python.ops import math_ops, state_ops, control_flow_ops
 from . import TF_KERAS
 
@@ -70,7 +69,7 @@ def _update_t_cur_eta_t(self):  # keras
     # Cosine annealing
     if self.use_cosine_annealing:
         # ensure eta_t is updated AFTER t_cur
-        with ops.control_dependencies([self.updates[-1]]):
+        with tf.control_dependencies([self.updates[-1]]):
             self.updates.append(state_ops.assign(self.eta_t,
                                                  _compute_eta_t(self)))
 
@@ -89,7 +88,7 @@ def _update_t_cur_eta_t_v2(self, lr_t=None, var=None):  # tf.keras
     # Cosine annealing
     if self.use_cosine_annealing and iteration_done:
         # ensure eta_t is updated AFTER t_cur
-        with ops.control_dependencies([t_cur_update]):
+        with tf.control_dependencies([t_cur_update]):
             eta_t_update = state_ops.assign(self.eta_t, _compute_eta_t(self),
                                             use_locking=self._use_locking)
         self.lr_t = lr_t * self.eta_t  # for external tracking
