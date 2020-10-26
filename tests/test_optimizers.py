@@ -90,8 +90,8 @@ def test_misc():  # tests of non-main features to improve coverage
         embed_input_dim = 5
 
         # arbitrarily select SGDW for coverage testing
-        l1_reg = 1e-4 if optimizer_name == 'SGDW' else 0
-        l2_reg = 1e-4 if optimizer_name != 'SGDW' else 0
+        l1_reg = 1e-4 if optimizer_name == 'SGDW' else None
+        l2_reg = 1e-4 if optimizer_name != 'SGDW' else None
         if optimizer_name == 'SGDW':
             optimizer_kw.update(dict(zero_penalties=False,
                                       weight_decays={},

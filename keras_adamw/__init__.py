@@ -28,4 +28,4 @@ else:
 from .utils import get_weight_decays, fill_dict_in_order
 from .utils import reset_seeds, K_eval
 
-__version__ = '1.37'
+__version__ = '1.38'
