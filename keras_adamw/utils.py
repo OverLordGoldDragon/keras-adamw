@@ -164,11 +164,8 @@ def _get_layer_penalties(layer, zero_penalties=False):
     for weight_name in ['kernel', 'bias']:
         _lambda = getattr(layer, weight_name + '_regularizer', None)
         if _lambda is not None:
-            l1l2 = (float(_lambda.l1), float(_lambda.l2))
+            l1l2 = _get_and_maybe_zero_penalties(_lambda, zero_penalties)
             penalties.append([getattr(layer, weight_name).name, l1l2])
-            if zero_penalties:
-                _lambda.l1 = np.array(0., dtype=_lambda.l1.dtype)
-                _lambda.l2 = np.array(0., dtype=_lambda.l2.dtype)
     return penalties
 
 
@@ -190,12 +187,19 @@ def _cell_penalties(rnn_cell, zero_penalties=False):
         _lambda = getattr(cell, weight_type + '_regularizer', None)
         if _lambda is not None:
             weight_name = cell.weights[weight_idx].name
-            l1l2 = (float(_lambda.l1), float(_lambda.l2))
+            l1l2 = _get_and_maybe_zero_penalties(_lambda, zero_penalties)
             penalties.append([weight_name, l1l2])
-            if zero_penalties:
-                _lambda.l1 = np.array(0., dtype=_lambda.l1.dtype)
-                _lambda.l2 = np.array(0., dtype=_lambda.l2.dtype)
     return penalties
+
+
+def _get_and_maybe_zero_penalties(_lambda, zero_penalties):
+    if zero_penalties:
+        if hasattr(_lambda, 'l1'):
+            _lambda.l1 = np.array(0., dtype=_lambda.l1.dtype)
+        if hasattr(_lambda, 'l2'):
+            _lambda.l2 = np.array(0., dtype=_lambda.l2.dtype)
+    return (float(getattr(_lambda, 'l1', 0.)),
+            float(getattr(_lambda, 'l2', 0.)))
 
 
 def fill_dict_in_order(_dict, values_list):
