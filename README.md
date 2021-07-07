@@ -4,6 +4,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/OverLordGoldDragon/keras-adamw/badge.svg?branch=master&service=github)](https://coveralls.io/github/OverLordGoldDragon/keras-adamw)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/1215c1605ad545cba419ee6e5cc870f5)](https://www.codacy.com?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=OverLordGoldDragon/keras-adamw&amp;utm_campaign=Badge_Grade)
 [![PyPI version](https://badge.fury.io/py/keras-adamw.svg)](https://badge.fury.io/py/keras-adamw)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5080529.svg)](https://doi.org/10.5281/zenodo.5080529)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
 ![](https://img.shields.io/badge/keras-tensorflow-blue.svg)
@@ -127,3 +128,21 @@ get_total_iterations(0, num_epochs=[1,3,5,8], iterations_per_epoch=[240,120,60,3
  - Best used for pretrained layers - e.g. greedy layer-wise pretraining, or pretraining a feature extractor to a classifier network. Can be a better alternative to freezing layer weights. --_My recommendation_
  - It's often best not to pretrain layers fully (till convergence, or even best obtainable validation score) - as it may inhibit their ability to adapt to newly-added layers.  --_My recommendation_
  - The more the layers are pretrained, the lower their fraction of new layers' `lr` should be. --_My recommendation_
+
+## How to cite
+
+Short form:
+
+> OverLordGoldDragon, keras-adamw, 2019. GitHub repository, https://github.com/OverLordGoldDragon/keras-adamw/. DOI: 10.5281/zenodo.5080529
+
+BibTeX:
+
+```bibtex
+@article{OverLordGoldDragon2019keras-adamw,
+  title={Keras AdamW},
+  author={OverLordGoldDragon},
+  journal={GitHub. Note: https://github.com/OverLordGoldDragon/keras-adamw/},
+  year={2019},
+  doi={10.5281/zenodo.5080529},
+}
+```
