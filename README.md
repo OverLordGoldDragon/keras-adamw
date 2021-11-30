@@ -28,7 +28,9 @@ Keras/TF implementation of **AdamW**, **SGDW**, **NadamW**, and **Warm Restarts*
 
 ## Installation
 
-`pip install keras-adamw` or clone repository
+`pip install keras-adamw`. Or, for latest version (most likely stable):
+
+`pip install git+https://github.com/OverLordGoldDragon/keras-adamw`
 
 ## Usage
 
