@@ -218,6 +218,13 @@ def _test_control(optimizer_name, amsgrad=False, nesterov=False, momentum=.9):
 
 
 def _test_save_load(model, X, optimizer_name, optimizer):
+    try:
+        # keras-side error
+        skip_test = bool(tf.__version__ == '1.14.0')
+    except:
+        skip_test = False
+    if skip_test:
+        return
     saved_model_preds = model.predict(X[0])
     saved_model_weights = K.batch_get_value(model.trainable_weights)
     saved_optim_weights = K.batch_get_value(model.optimizer.weights)
