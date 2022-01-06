@@ -135,14 +135,14 @@ get_total_iterations(0, num_epochs=[1,3,5,8], iterations_per_epoch=[240,120,60,3
 
 Short form:
 
-> OverLordGoldDragon, keras-adamw, 2019. GitHub repository, https://github.com/OverLordGoldDragon/keras-adamw/. DOI: 10.5281/zenodo.5080529
+> John Muradeli, keras-adamw, 2019. GitHub repository, https://github.com/OverLordGoldDragon/keras-adamw/. DOI: 10.5281/zenodo.5080529
 
 BibTeX:
 
 ```bibtex
 @article{OverLordGoldDragon2019keras-adamw,
   title={Keras AdamW},
-  author={OverLordGoldDragon},
+  author={John Muradeli},
   journal={GitHub. Note: https://github.com/OverLordGoldDragon/keras-adamw/},
   year={2019},
   doi={10.5281/zenodo.5080529},
